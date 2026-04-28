@@ -179,11 +179,7 @@ export function ProjectsPageClient({
               />
             </div>
 
-            <div className="flex items-center justify-between gap-6 lg:justify-end">
-              <p className="text-sm text-neutral-500">
-                {filteredProjects.length}{" "}
-                {filteredProjects.length === 1 ? "proyecto" : "proyectos"}
-              </p>
+            <div className="flex items-center justify-end gap-6">
               <div className="group relative">
                 <button
                   type="button"
@@ -226,7 +222,11 @@ export function ProjectsPageClient({
           )}
 
           {totalPages > 1 ? (
-            <div className="mt-20 flex items-center justify-center gap-5">
+            <div className="mt-20 flex flex-col items-center justify-center gap-5 sm:flex-row">
+              <p className="text-sm text-neutral-500 sm:min-w-32 sm:text-right">
+                {filteredProjects.length}{" "}
+                {filteredProjects.length === 1 ? "proyecto" : "proyectos"}
+              </p>
               <button
                 type="button"
                 className="flex h-11 w-11 items-center justify-center border border-neutral-300 text-2xl text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950 disabled:pointer-events-none disabled:opacity-35"
@@ -249,6 +249,11 @@ export function ProjectsPageClient({
                 ›
               </button>
             </div>
+          ) : visibleProjects.length > 0 ? (
+            <p className="mt-20 text-center text-sm text-neutral-500">
+              {filteredProjects.length}{" "}
+              {filteredProjects.length === 1 ? "proyecto" : "proyectos"}
+            </p>
           ) : null}
         </div>
       </section>
