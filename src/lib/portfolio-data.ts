@@ -1,6 +1,7 @@
 import {
   contactChannels,
   projectCategories,
+  projectMediaByProjectId,
   projects,
   studioProfile,
   teamMembers,
@@ -22,6 +23,10 @@ export function getFeaturedProjects() {
 
 export function getProjectBySlug(slug: string) {
   return getActiveProjects().find((project) => project.slug === slug);
+}
+
+export function getProjectMediaByProjectId() {
+  return projectMediaByProjectId;
 }
 
 export function getActiveProjectCategories() {

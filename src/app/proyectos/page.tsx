@@ -5,6 +5,7 @@ import {
   getActiveProjectCategories,
   getActiveProjects,
   getContactChannels,
+  getProjectMediaByProjectId,
   getStudioProfile,
 } from "@/lib/portfolio-data";
 
@@ -12,13 +13,18 @@ export default function ProjectsPage() {
   const projects = getActiveProjects();
   const categories = getActiveProjectCategories();
   const contactChannels = getContactChannels();
+  const projectMediaByProjectId = getProjectMediaByProjectId();
   const studioProfile = getStudioProfile();
 
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-white text-neutral-950">
-        <ProjectsPageClient projects={projects} categories={categories} />
+        <ProjectsPageClient
+          projects={projects}
+          categories={categories}
+          projectMediaByProjectId={projectMediaByProjectId}
+        />
       </main>
       <Footer studioProfile={studioProfile} contactChannels={contactChannels} />
     </>
