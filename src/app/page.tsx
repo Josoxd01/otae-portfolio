@@ -24,8 +24,8 @@ export default function Home() {
       <Navbar />
       <main className="min-h-screen bg-white text-neutral-950">
         <FeaturedProjectsCarousel projects={featuredProjects} categories={projectCategories} />
-        <AboutSection studioProfile={studioProfile} />
         <SpecializationAreasSection categories={projectCategories} projects={activeProjects} />
+        <AboutSection studioProfile={studioProfile} />
         <ContactCTASection contactChannels={contactChannels} />
       </main>
       <Footer studioProfile={studioProfile} contactChannels={contactChannels} />

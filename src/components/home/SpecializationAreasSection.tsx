@@ -11,145 +11,199 @@ interface SpecializationAreasSectionProps {
   projects: Project[];
 }
 
-const pageSize = 3;
-
 export function SpecializationAreasSection({
   categories,
   projects,
 }: SpecializationAreasSectionProps) {
-  const [page, setPage] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
-  const visibleCategories = categories.slice(page * pageSize, page * pageSize + pageSize);
+  const activeCategory = categories[activeIndex];
 
   const projectByCategory = useMemo(() => {
-    const entries: Array<[string, Project | undefined]> = categories.map((category) => [
-      category.id,
-      projects.find((project) => project.categoryIds.includes(category.id)),
-    ]);
+    const entries: Array<[string, Project | undefined]> = categories.map((category) => {
+      const relatedProjects = projects.filter(
+        (project) => project.coverMedia && project.categoryIds.includes(category.id),
+      );
+      const preferredProject =
+        relatedProjects.find((project) => project.primaryCategoryId === category.id) ??
+        relatedProjects.find((project) => project.coverMedia?.url !== category.coverMedia?.url) ??
+        relatedProjects[0];
+
+      return [category.id, preferredProject];
+    });
 
     return new Map(entries);
   }, [categories, projects]);
 
-  function previousPage() {
-    setPage((current) => (current - 1 + totalPages) % totalPages);
+  if (!activeCategory) {
+    return null;
   }
 
-  function nextPage() {
-    setPage((current) => (current + 1) % totalPages);
+  const relatedProject = projectByCategory.get(activeCategory.id);
+  const mainMedia = getMainMedia(activeCategory, relatedProject);
+  const secondaryMedia = getSecondaryMedia(activeCategory, relatedProject, projects);
+  const totalItems = categories.length;
+
+  function previousItem() {
+    setActiveIndex((current) => (current - 1 + totalItems) % totalItems);
+  }
+
+  function nextItem() {
+    setActiveIndex((current) => (current + 1) % totalItems);
   }
 
   return (
-    <section className="bg-neutral-50 px-6 py-24 text-neutral-950 sm:px-8 lg:px-12 lg:py-32">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex items-center justify-between gap-8">
+    <section className="bg-neutral-50 px-6 py-20 text-neutral-950 sm:px-8 lg:px-12 lg:py-28">
+      <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[0.78fr_1.22fr] lg:items-center lg:gap-24">
+        <div className="max-w-xl">
           <p className="section-label">Áreas de especialización</p>
-
-          {totalPages > 1 ? (
-            <div className="hidden items-center gap-3 sm:flex">
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center border border-neutral-200 text-xl text-neutral-500 transition hover:border-neutral-950 hover:text-neutral-950"
-                aria-label="Categorías anteriores"
-                onClick={previousPage}
-              >
-                ‹
-              </button>
-              <span className="text-sm text-neutral-500">
-                {page + 1} / {totalPages}
-              </span>
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center border border-neutral-200 text-xl text-neutral-950 transition hover:bg-neutral-950 hover:text-white"
-                aria-label="Categorías siguientes"
-                onClick={nextPage}
-              >
-                ›
-              </button>
-            </div>
+          <h2 className="mt-7 font-title text-4xl font-medium leading-tight sm:text-5xl">
+            {activeCategory.name}
+          </h2>
+          {activeCategory.description ? (
+            <p className="mt-6 text-base leading-8 text-neutral-600 sm:text-lg">
+              {activeCategory.description}
+            </p>
           ) : null}
-        </div>
 
-        <div className="mt-12 grid gap-10 md:grid-cols-3">
-          {visibleCategories.map((category) => (
-            <CategoryPreviewCard
-              key={category.id}
-              category={category}
-              project={projectByCategory.get(category.id)}
-            />
-          ))}
-        </div>
+          <Link
+            href={`/proyectos?categoria=${activeCategory.slug}`}
+            className="mt-8 inline-flex items-center gap-3 text-sm font-semibold text-neutral-950 transition hover:gap-4"
+          >
+            Ver proyectos de {activeCategory.name} <span aria-hidden="true">→</span>
+          </Link>
 
-        {totalPages > 1 ? (
-          <div className="mt-10 flex items-center justify-between sm:hidden">
+          <div className="mt-12 flex items-center gap-5">
             <button
               type="button"
-              className="border border-neutral-200 px-4 py-3 text-sm"
-              onClick={previousPage}
+              className="flex h-11 w-11 items-center justify-center border border-neutral-300 text-2xl text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950"
+              aria-label="Especialización anterior"
+              onClick={previousItem}
             >
-              Anterior
+              ‹
             </button>
             <span className="text-sm text-neutral-500">
-              {page + 1} / {totalPages}
+              {activeIndex + 1} / {totalItems}
             </span>
             <button
               type="button"
-              className="border border-neutral-200 px-4 py-3 text-sm"
-              onClick={nextPage}
+              className="flex h-11 w-11 items-center justify-center border border-neutral-300 text-2xl text-neutral-950 transition hover:bg-neutral-950 hover:text-white"
+              aria-label="Especialización siguiente"
+              onClick={nextItem}
             >
-              Siguiente
+              ›
             </button>
           </div>
-        ) : null}
+
+          <div className="mt-6 flex gap-2">
+            {categories.map((category, index) => (
+              <button
+                key={category.id}
+                type="button"
+                className={`h-1.5 transition ${
+                  index === activeIndex ? "w-10 bg-neutral-950" : "w-4 bg-neutral-300"
+                }`}
+                aria-label={`Ver especialización ${category.name}`}
+                onClick={() => setActiveIndex(index)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="relative min-h-[440px] sm:min-h-[560px] lg:min-h-[610px]">
+          <div className="absolute left-0 top-0 h-[76%] w-[82%] overflow-hidden bg-neutral-200">
+            <SpotlightImage
+              media={mainMedia}
+              alt={mainMedia?.altText ?? `${activeCategory.name} - imagen principal`}
+              sizes="(min-width: 1024px) 54vw, 92vw"
+              variant="main"
+              priority
+            />
+          </div>
+
+          <Link
+            href={relatedProject ? `/proyectos/${relatedProject.slug}` : `/proyectos?categoria=${activeCategory.slug}`}
+            className="group absolute bottom-0 right-0 h-[48%] w-[52%] overflow-hidden border-[10px] border-neutral-50 bg-neutral-200 shadow-[0_18px_42px_rgba(0,0,0,0.12)] sm:border-[14px] lg:h-[46%] lg:w-[47%]"
+            aria-label={
+              relatedProject
+                ? `Ver proyecto destacado ${relatedProject.title}`
+                : `Ver proyectos de ${activeCategory.name}`
+            }
+          >
+            <SpotlightImage
+              media={secondaryMedia}
+              alt={
+                secondaryMedia?.altText ??
+                relatedProject?.title ??
+                `${activeCategory.name} - proyecto relacionado`
+              }
+              sizes="(min-width: 1024px) 26vw, 52vw"
+              variant="secondary"
+            />
+
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/42 to-transparent px-5 pb-5 pt-16 text-white">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-white/70">
+                Proyecto destacado
+              </p>
+              <h3 className="mt-2 font-title text-xl font-medium leading-tight">
+                {relatedProject?.title ?? activeCategory.name}
+              </h3>
+              <span className="mt-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/80 transition group-hover:gap-3 group-hover:text-white">
+                Ver proyecto <span aria-hidden="true">→</span>
+              </span>
+            </div>
+          </Link>
+        </div>
       </div>
     </section>
   );
 }
 
-interface CategoryPreviewCardProps {
-  category: ProjectCategory;
-  project?: Project;
+function getMainMedia(category: ProjectCategory, relatedProject?: Project) {
+  return category.coverMedia ?? relatedProject?.coverMedia;
 }
 
-function CategoryPreviewCard({ category, project }: CategoryPreviewCardProps) {
-  const previewMedia: MediaReference | undefined = project?.coverMedia ?? category.coverMedia;
-  const previewHref = project ? `/proyectos/${project.slug}` : `/proyectos?categoria=${category.slug}`;
-  const previewAlt = previewMedia?.altText ?? `${category.name} - arquitectura`;
+function getSecondaryMedia(category: ProjectCategory, relatedProject: Project | undefined, projects: Project[]) {
+  if (relatedProject?.coverMedia && relatedProject.coverMedia.url !== category.coverMedia?.url) {
+    return relatedProject.coverMedia;
+  }
+
+  return projects.find((project) => project.coverMedia?.url !== category.coverMedia?.url)?.coverMedia;
+}
+
+interface SpotlightImageProps {
+  alt: string;
+  media?: MediaReference;
+  priority?: boolean;
+  sizes: string;
+  variant: "main" | "secondary";
+}
+
+function SpotlightImage({ alt, media, priority = false, sizes, variant }: SpotlightImageProps) {
+  const imageTone =
+    variant === "secondary"
+      ? "grayscale transition duration-700 group-hover:scale-[1.03] group-hover:grayscale-0"
+      : "transition duration-700 hover:scale-[1.015]";
 
   return (
-    <article className="group">
-      <div className="flex items-start justify-between gap-6">
-        <h3 className="font-title text-2xl font-medium">{category.name}</h3>
-        <Link
-          href={`/proyectos?categoria=${category.slug}`}
-          className="mt-1 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500 transition hover:text-neutral-950"
-        >
-          Ver todos →
-        </Link>
-      </div>
-
-      <Link href={previewHref} className="mt-7 block aspect-[4/3] overflow-hidden bg-neutral-200">
-        <div className="relative h-full w-full">
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,#f2f0eb,#b8bab1_48%,#333)]" />
-          {previewMedia ? (
-            <Image
-              src={previewMedia.url}
-              alt={previewAlt}
-              fill
-              sizes="(min-width: 768px) 33vw, 100vw"
-              className="absolute inset-0 h-full w-full object-cover grayscale transition duration-700 group-hover:scale-[1.03] group-hover:grayscale-0"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-              }}
-            />
-          ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/28 to-transparent" />
-        </div>
-      </Link>
-
-      {category.description ? (
-        <p className="mt-5 text-sm leading-7 text-neutral-600">{category.description}</p>
+    <div className="relative h-full w-full">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#efede8,#b7b9af_48%,#262626)]" />
+      {media ? (
+        <Image
+          src={media.url}
+          alt={alt}
+          fill
+          priority={priority}
+          sizes={sizes}
+          className={`absolute inset-0 h-full w-full object-cover ${imageTone}`}
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
       ) : null}
-    </article>
+      {variant === "main" ? (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/12 to-transparent" />
+      ) : null}
+    </div>
   );
 }
