@@ -8,7 +8,10 @@ interface AboutSectionProps {
 
 export function AboutSection({ studioProfile }: AboutSectionProps) {
   return (
-    <section id="estudio" className="bg-white px-6 py-24 text-neutral-950 sm:px-8 lg:px-12 lg:py-36">
+    <section
+      id="estudio"
+      className="bg-white px-6 pb-24 pt-20 text-neutral-950 sm:px-8 lg:px-12 lg:pb-32 lg:pt-24"
+    >
       <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[0.95fr_1fr] lg:gap-24">
         <div>
           <p className="section-label">Acerca de OTAE</p>
@@ -24,7 +27,7 @@ export function AboutSection({ studioProfile }: AboutSectionProps) {
             href="#contacto"
             className="mt-10 inline-flex items-center gap-3 text-sm font-medium text-neutral-950 transition hover:gap-4"
           >
-            Conocer mas sobre nosotros <span aria-hidden="true">→</span>
+            Conocer más sobre nosotros <span aria-hidden="true">→</span>
           </Link>
         </div>
       </div>

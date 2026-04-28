@@ -39,7 +39,7 @@ export function Navbar() {
           type="button"
           className="flex h-10 w-10 items-center justify-center border border-neutral-200 text-neutral-900 md:hidden"
           aria-expanded={isOpen}
-          aria-label={isOpen ? "Cerrar menu" : "Abrir menu"}
+          aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
           onClick={() => setIsOpen((current) => !current)}
         >
           <span className="relative h-3.5 w-5" aria-hidden="true">

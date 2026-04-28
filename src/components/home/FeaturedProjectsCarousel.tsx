@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import type { Project, ProjectCategory } from "@/types/portfolio";
@@ -26,7 +26,7 @@ export function FeaturedProjectsCarousel({ categories, projects }: FeaturedProje
 
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % projects.length);
-    }, 6500);
+    }, 10000);
 
     return () => window.clearInterval(timer);
   }, [projects.length]);

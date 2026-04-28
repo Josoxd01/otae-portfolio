@@ -28,7 +28,7 @@ export function Footer({ contactChannels, studioProfile }: FooterProps) {
           </div>
 
           <div>
-            <h2 className="text-sm font-semibold text-neutral-950">Navegacion</h2>
+            <h2 className="text-sm font-semibold text-neutral-950">Navegación</h2>
             <nav className="mt-5 flex flex-col gap-3 text-sm">
               {footerLinks.map((link) => (
                 <Link key={link.href} href={link.href} className="transition hover:text-neutral-950">

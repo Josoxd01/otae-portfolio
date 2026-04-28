@@ -6,13 +6,13 @@ export const studioProfile: StudioProfile = {
   legalName: "OTAE Studio",
   tagline: "Arquitectura, ciudad e interiores desde el contexto.",
   description:
-    "OTAE es un estudio de arquitectura enfocado en proyectos residenciales, comerciales, urbanos e interiores que conectan claridad espacial con sensibilidad material.",
+    "OTAE es una oficina técnica de arquitectura y edificación enfocada en diseño arquitectónico, construcción e interiores para proyectos residenciales, comerciales y urbanos.",
   mission:
-    "Disenar espacios precisos, habitables y memorables que respondan al lugar, al programa y a las personas que los usan.",
+    "Desarrollamos soluciones funcionales, habitables y sensibles al contexto, cuidando cada etapa del proyecto desde la idea inicial hasta su materialización.",
   vision:
-    "Consolidar una practica arquitectonica cercana, rigurosa y contemporanea desde el sur del Ecuador.",
+    "Consolidar una práctica arquitectónica cercana, rigurosa y contemporánea desde el sur del Ecuador.",
   history:
-    "El estudio nace como una plataforma para desarrollar proyectos arquitectonicos, investigacion urbana y colaboraciones docentes.",
+    "El estudio nace como una plataforma para desarrollar proyectos arquitectónicos, investigación urbana y colaboraciones docentes.",
   location: "Loja, Ecuador",
   logoMedia: {
     id: "otae-logo",
@@ -23,7 +23,7 @@ export const studioProfile: StudioProfile = {
   },
   heroMedia: {
     id: "otae-hero",
-    url: "/mock/studio/hero.jpg",
+    url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1800&q=80",
     assetType: "image",
     altText: "Mesa de trabajo de OTAE Studio con planos y materiales.",
     title: "OTAE Studio",

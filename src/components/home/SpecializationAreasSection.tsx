@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import type { Project, ProjectCategory } from "@/types/portfolio";
+import type { MediaReference, Project, ProjectCategory } from "@/types/portfolio";
 
 interface SpecializationAreasSectionProps {
   categories: ProjectCategory[];
@@ -42,18 +42,15 @@ export function SpecializationAreasSection({
   return (
     <section className="bg-neutral-50 px-6 py-24 text-neutral-950 sm:px-8 lg:px-12 lg:py-32">
       <div className="mx-auto max-w-7xl">
-        <div className="flex items-end justify-between gap-8">
-          <div>
-            <p className="section-label">Areas de especializacion</p>
-            <h2 className="mt-6 font-title text-4xl font-medium sm:text-5xl">Categorias</h2>
-          </div>
+        <div className="flex items-center justify-between gap-8">
+          <p className="section-label">Áreas de especialización</p>
 
           {totalPages > 1 ? (
             <div className="hidden items-center gap-3 sm:flex">
               <button
                 type="button"
                 className="flex h-10 w-10 items-center justify-center border border-neutral-200 text-xl text-neutral-500 transition hover:border-neutral-950 hover:text-neutral-950"
-                aria-label="Categorias anteriores"
+                aria-label="Categorías anteriores"
                 onClick={previousPage}
               >
                 ‹
@@ -64,7 +61,7 @@ export function SpecializationAreasSection({
               <button
                 type="button"
                 className="flex h-10 w-10 items-center justify-center border border-neutral-200 text-xl text-neutral-950 transition hover:bg-neutral-950 hover:text-white"
-                aria-label="Categorias siguientes"
+                aria-label="Categorías siguientes"
                 onClick={nextPage}
               >
                 ›
@@ -73,7 +70,7 @@ export function SpecializationAreasSection({
           ) : null}
         </div>
 
-        <div className="mt-14 grid gap-10 md:grid-cols-3">
+        <div className="mt-12 grid gap-10 md:grid-cols-3">
           {visibleCategories.map((category) => (
             <CategoryPreviewCard
               key={category.id}
@@ -115,6 +112,10 @@ interface CategoryPreviewCardProps {
 }
 
 function CategoryPreviewCard({ category, project }: CategoryPreviewCardProps) {
+  const previewMedia: MediaReference | undefined = project?.coverMedia ?? category.coverMedia;
+  const previewHref = project ? `/proyectos/${project.slug}` : `/proyectos?categoria=${category.slug}`;
+  const previewAlt = previewMedia?.altText ?? `${category.name} - arquitectura`;
+
   return (
     <article className="group">
       <div className="flex items-start justify-between gap-6">
@@ -127,16 +128,13 @@ function CategoryPreviewCard({ category, project }: CategoryPreviewCardProps) {
         </Link>
       </div>
 
-      <Link
-        href={project ? `/proyectos/${project.slug}` : `/proyectos?categoria=${category.slug}`}
-        className="mt-7 block aspect-[4/3] overflow-hidden bg-neutral-200"
-      >
+      <Link href={previewHref} className="mt-7 block aspect-[4/3] overflow-hidden bg-neutral-200">
         <div className="relative h-full w-full">
           <div className="absolute inset-0 bg-[linear-gradient(135deg,#f2f0eb,#b8bab1_48%,#333)]" />
-          {project?.coverMedia ? (
+          {previewMedia ? (
             <Image
-              src={project.coverMedia.url}
-              alt={project.coverMedia.altText ?? project.title}
+              src={previewMedia.url}
+              alt={previewAlt}
               fill
               sizes="(min-width: 768px) 33vw, 100vw"
               className="absolute inset-0 h-full w-full object-cover grayscale transition duration-700 group-hover:scale-[1.03] group-hover:grayscale-0"
