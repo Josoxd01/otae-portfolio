@@ -5,7 +5,7 @@ import type { ContactChannel, StudioProfile } from "@/types/portfolio";
 const footerLinks = [
   { label: "Proyectos", href: "/proyectos" },
   { label: "Estudio", href: "/estudio" },
-  { label: "Contacto", href: "#contacto" },
+  { label: "Contacto", href: "/contacto" },
 ];
 
 interface FooterProps {

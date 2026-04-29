@@ -4,16 +4,33 @@ import type { StudioProfile } from "@/types/portfolio";
 export const studioProfile: StudioProfile = {
   name: "OTAE",
   legalName: "OTAE Studio",
-  tagline: "Oficina tenica de arquitectura y edificación",
+  tagline: "Oficina técnica de arquitectura y edificación",
   description:
     "OTAE es una oficina técnica de arquitectura y edificación enfocada en diseño arquitectónico, construcción e interiores para proyectos residenciales, comerciales y urbanos.",
+  email: "hola@otae.studio",
+  phone: "+593 7 000 0000",
+  whatsappNumber: "+593 99 000 0000",
+  whatsappUrl: "https://wa.me/593990000000",
+  instagramHandle: "@otae_ecuador",
+  instagramUrl: "https://www.instagram.com/otae_ecuador",
+  linkedinUrl: "https://www.linkedin.com/company/otae-studio",
+  address: "Centro de Loja",
+  city: "Loja",
+  country: "Ecuador",
+  location: "Loja, Ecuador",
+  locationLabel: "Oficina OTAE, Loja",
+  mapUrl: "https://www.google.com/maps/search/?api=1&query=Loja%2C%20Ecuador",
+  openingHours: [
+    { label: "Lunes a viernes", value: "09:00 - 18:00" },
+    { label: "Sábado", value: "10:00 - 14:00" },
+    { label: "Domingo", value: "Cerrado" },
+  ],
   mission:
     "Desarrollamos soluciones funcionales, habitables y sensibles al contexto, cuidando cada etapa del proyecto desde la idea inicial hasta su materialización.",
   vision:
     "Consolidar una práctica arquitectónica cercana, rigurosa y contemporánea desde el sur del Ecuador.",
   history:
     "El estudio nace como una plataforma para desarrollar proyectos arquitectónicos, investigación urbana y colaboraciones docentes, integrando visión técnica, sensibilidad espacial y procesos de obra claros.",
-  location: "Loja, Ecuador",
   logoMedia: {
     id: "otae-logo",
     url: "/mock/brand/otae-logo.svg",
@@ -36,7 +53,7 @@ export const studioProfile: StudioProfile = {
     title: "Oficina OTAE",
   },
   heroLabel: "Estudio",
-  heroTitle: "Oficina tenica de arquitectura y edificación",
+  heroTitle: "Oficina técnica de arquitectura y edificación",
   heroTagline: "Tres miradas que convergen en una forma honesta de diseñar.",
   aboutImage: {
     id: "otae-about-team",
@@ -45,6 +62,7 @@ export const studioProfile: StudioProfile = {
     altText: "Equipo profesional colaborando alrededor de una mesa de trabajo.",
     title: "Equipo OTAE",
   },
+  aboutTitle: "Tres visiones, una misma forma de entender el diseño",
   aboutParagraphs: [
     "Somos OTAE, un estudio de arquitectura conformado por tres visiones que convergen en una misma forma de entender el diseño.",
     "Creemos en una arquitectura que trasciende lo funcional: espacios que dialogan con la materia, que se sostienen en lo técnico sin perder lo humano. Cada proyecto es una búsqueda de equilibrio entre lo esencial y lo habitable, una exploración honesta que convierte el diseño en una experiencia atemporal.",
