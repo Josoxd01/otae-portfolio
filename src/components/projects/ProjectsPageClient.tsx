@@ -8,6 +8,7 @@ import type { Project, ProjectCategory, ProjectMedia } from "@/types/portfolio";
 
 interface ProjectsPageClientProps {
   categories: ProjectCategory[];
+  initialCategoryId?: string;
   projectMediaByProjectId: Record<string, ProjectMedia[]>;
   projects: Project[];
 }
@@ -20,17 +21,16 @@ interface FilterOption {
 type FilterKey = "category" | "year" | "location";
 
 const projectsPerPage = 3;
-const heroVideoUrl =
-  "https://videos.pexels.com/video-files/856192/856192-hd_1920_1080_25fps.mp4";
-const heroFallbackImageUrl =
-  "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&w=2200&q=80";
+const heroVideoUrl = "/videos/projects-hero.mp4";
+const heroFallbackImageUrl = "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&w=2200&q=80";
 
 export function ProjectsPageClient({
   categories,
+  initialCategoryId = "all",
   projectMediaByProjectId,
   projects,
 }: ProjectsPageClientProps) {
-  const [categoryId, setCategoryId] = useState("all");
+  const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [year, setYear] = useState("all");
   const [location, setLocation] = useState("all");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
@@ -327,11 +327,10 @@ function CustomFilter({
             <button
               key={option.value}
               type="button"
-              className={`flex w-full items-center justify-between px-3 py-3 text-left text-sm transition ${
-                option.value === value
+              className={`flex w-full items-center justify-between px-3 py-3 text-left text-sm transition ${option.value === value
                   ? "bg-neutral-950 text-white"
                   : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950"
-              }`}
+                }`}
               onClick={() => onSelect(option.value)}
             >
               {option.label}
@@ -407,11 +406,10 @@ function ProjectMediaComposition({ media, project }: ProjectMediaCompositionProp
     <div className="relative min-h-[360px] sm:min-h-[500px]">
       <Link
         href={`/proyectos/${project.slug}`}
-        className={`group block overflow-hidden bg-neutral-200 ${
-          media.secondary
+        className={`group block overflow-hidden bg-neutral-200 ${media.secondary
             ? "absolute left-0 top-0 h-[78%] w-[82%]"
             : "relative h-[420px] w-full sm:h-[560px]"
-        }`}
+          }`}
       >
         <ProjectImage media={media.primary} title={project.title} sizes="(min-width: 1024px) 52vw, 100vw" />
       </Link>
@@ -476,15 +474,15 @@ function getProjectImages(
     visibleImages.find((media) => media.role === "cover") ??
     (project.coverMedia
       ? {
-          id: project.coverMedia.id ?? `${project.id}-cover`,
-          url: project.coverMedia.url,
-          assetType: project.coverMedia.assetType,
-          role: "cover" as const,
-          title: project.coverMedia.title,
-          altText: project.coverMedia.altText,
-          sortOrder: 0,
-          isVisible: true,
-        }
+        id: project.coverMedia.id ?? `${project.id}-cover`,
+        url: project.coverMedia.url,
+        assetType: project.coverMedia.assetType,
+        role: "cover" as const,
+        title: project.coverMedia.title,
+        altText: project.coverMedia.altText,
+        sortOrder: 0,
+        isVisible: true,
+      }
       : undefined);
 
   const secondary = visibleImages.find((media) => media.url !== primary?.url);

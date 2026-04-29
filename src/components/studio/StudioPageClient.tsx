@@ -78,6 +78,7 @@ export function StudioPageClient({ studioProfile, teamMembers }: StudioPageClien
                 src={aboutImage.url}
                 alt={aboutImage.altText ?? "Equipo OTAE en sesión de trabajo."}
                 fill
+                priority
                 quality={90}
                 sizes="(min-width: 1024px) 42vw, 100vw"
                 className="absolute inset-0 h-full w-full object-cover"
