@@ -162,6 +162,13 @@ export interface StudioProfile {
   location?: string; // Ubicación principal
   logoMedia?: MediaReference; // Logo del estudio
   heroMedia?: MediaReference; // Imagen principal/hero del sitio
+  heroImage?: MediaReference; // Imagen principal para la página Estudio
+  heroLabel?: string; // Label breve para el hero del estudio
+  heroTitle?: string; // Título principal del hero del estudio
+  heroTagline?: string; // Lema corto para el hero del estudio
+  aboutImage?: MediaReference; // Imagen de apoyo para la sección Acerca del estudio
+  aboutText?: string; // Texto breve de respaldo para la sección Acerca del estudio
+  aboutParagraphs?: string[]; // Párrafos editoriales para la sección Acerca del estudio
   socialLinks?: ContactChannel[]; // Array de redes sociales y otros canales sociales
   updatedAt?: string; // Última actualización del perfil
 }

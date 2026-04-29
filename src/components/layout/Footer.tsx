@@ -4,7 +4,7 @@ import type { ContactChannel, StudioProfile } from "@/types/portfolio";
 
 const footerLinks = [
   { label: "Proyectos", href: "/proyectos" },
-  { label: "Estudio", href: "#estudio" },
+  { label: "Estudio", href: "/estudio" },
   { label: "Contacto", href: "#contacto" },
 ];
 
@@ -15,7 +15,10 @@ interface FooterProps {
 
 export function Footer({ contactChannels, studioProfile }: FooterProps) {
   return (
-    <footer className="border-t border-neutral-200 bg-white px-6 py-16 text-neutral-700 sm:px-8 lg:px-12">
+    <footer
+      id="contacto"
+      className="border-t border-neutral-200 bg-white px-6 py-16 text-neutral-700 sm:px-8 lg:px-12"
+    >
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-12 md:grid-cols-[1.2fr_0.7fr_1fr]">
           <div className="max-w-sm">

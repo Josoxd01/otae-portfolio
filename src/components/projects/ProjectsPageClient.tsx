@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import type { Project, ProjectCategory, ProjectMedia } from "@/types/portfolio";
 
@@ -36,6 +36,7 @@ export function ProjectsPageClient({
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [page, setPage] = useState(1);
   const [videoFailed, setVideoFailed] = useState(false);
+  const projectsListRef = useRef<HTMLDivElement | null>(null);
 
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
@@ -118,6 +119,20 @@ export function ProjectsPageClient({
     setPage(1);
   }
 
+  function scrollToProjectsList() {
+    window.setTimeout(() => {
+      projectsListRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  }
+
+  function goToPage(nextPage: number) {
+    setPage(nextPage);
+    scrollToProjectsList();
+  }
+
   return (
     <>
       <section className="relative h-[52svh] min-h-[420px] overflow-hidden bg-neutral-950 sm:h-[58svh] lg:h-[66svh]">
@@ -197,7 +212,7 @@ export function ProjectsPageClient({
           </div>
 
           {visibleProjects.length > 0 ? (
-            <div className="mt-16 space-y-24 lg:mt-20 lg:space-y-32">
+            <div ref={projectsListRef} className="mt-16 scroll-mt-24 space-y-24 lg:mt-20 lg:space-y-32">
               {visibleProjects.map((project, index) => (
                 <ProjectBlock
                   key={project.id}
@@ -232,7 +247,7 @@ export function ProjectsPageClient({
                 className="flex h-11 w-11 items-center justify-center border border-neutral-300 text-2xl text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950 disabled:pointer-events-none disabled:opacity-35"
                 disabled={page === 1}
                 aria-label="Página anterior"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                onClick={() => goToPage(Math.max(1, page - 1))}
               >
                 ‹
               </button>
@@ -244,7 +259,7 @@ export function ProjectsPageClient({
                 className="flex h-11 w-11 items-center justify-center border border-neutral-300 text-2xl text-neutral-950 transition hover:bg-neutral-950 hover:text-white disabled:pointer-events-none disabled:opacity-35"
                 disabled={page === totalPages}
                 aria-label="Página siguiente"
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                onClick={() => goToPage(Math.min(totalPages, page + 1))}
               >
                 ›
               </button>
