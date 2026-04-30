@@ -1,5 +1,5 @@
-import { contactChannels } from "@/data/contact-channels";
 import type { StudioProfile } from "@/types/portfolio";
+import { contactChannels } from "./contact-channels";
 
 export const studioProfile: StudioProfile = {
   name: "OTAE",
