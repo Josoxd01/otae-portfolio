@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
+import { useProjectsPageData } from "@/hooks/useProjectsPageData";
 import type { Project, ProjectCategory, ProjectMedia } from "@/types/portfolio";
 
 interface ProjectsPageClientProps {
@@ -30,6 +31,14 @@ export function ProjectsPageClient({
   projectMediaByProjectId,
   projects,
 }: ProjectsPageClientProps) {
+  const projectsPageData = useProjectsPageData({
+    categories,
+    projectMediaByProjectId,
+    projects,
+  });
+  const activeCategories = projectsPageData.categories;
+  const activeProjectMediaByProjectId = projectsPageData.projectMediaByProjectId;
+  const activeProjects = projectsPageData.projects;
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [year, setYear] = useState("all");
   const [location, setLocation] = useState("all");
@@ -39,41 +48,41 @@ export function ProjectsPageClient({
   const projectsListRef = useRef<HTMLDivElement | null>(null);
 
   const categoryById = useMemo(
-    () => new Map(categories.map((category) => [category.id, category])),
-    [categories],
+    () => new Map(activeCategories.map((category) => [category.id, category])),
+    [activeCategories],
   );
 
   const categoryOptions = useMemo<FilterOption[]>(
     () => [
       { label: "Todas las áreas", value: "all" },
-      ...categories.map((category) => ({ label: category.name, value: category.id })),
+      ...activeCategories.map((category) => ({ label: category.name, value: category.id })),
     ],
-    [categories],
+    [activeCategories],
   );
 
   const yearOptions = useMemo<FilterOption[]>(
     () => [
       { label: "Todos los años", value: "all" },
-      ...Array.from(new Set(projects.map((project) => project.year).filter(Boolean)))
+      ...Array.from(new Set(activeProjects.map((project) => project.year).filter(Boolean)))
         .sort((a, b) => Number(b) - Number(a))
         .map((value) => ({ label: String(value), value: String(value) })),
     ],
-    [projects],
+    [activeProjects],
   );
 
   const locationOptions = useMemo<FilterOption[]>(
     () => [
       { label: "Todas las ubicaciones", value: "all" },
-      ...Array.from(new Set(projects.map((project) => project.location).filter(Boolean)))
+      ...Array.from(new Set(activeProjects.map((project) => project.location).filter(Boolean)))
         .sort((a, b) => String(a).localeCompare(String(b)))
         .map((value) => ({ label: String(value), value: String(value) })),
     ],
-    [projects],
+    [activeProjects],
   );
 
   const filteredProjects = useMemo(
     () =>
-      projects
+      activeProjects
         .filter((project) => {
           const matchesCategory = categoryId === "all" || project.categoryIds.includes(categoryId);
           const matchesYear = year === "all" || String(project.year) === year;
@@ -88,7 +97,7 @@ export function ProjectsPageClient({
 
           return a.sortOrder - b.sortOrder;
         }),
-    [categoryId, location, projects, year],
+    [activeProjects, categoryId, location, year],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / projectsPerPage));
@@ -218,7 +227,8 @@ export function ProjectsPageClient({
                   key={project.id}
                   align={index % 2 === 0 ? "media-left" : "media-right"}
                   category={getPrimaryCategory(project, categoryById)}
-                  media={getProjectImages(project, projectMediaByProjectId)}
+                  media={getProjectImages(project, activeProjectMediaByProjectId)}
+                  priority={index === 0}
                   project={project}
                 />
               ))}
@@ -350,11 +360,12 @@ interface ProjectBlockProps {
     primary?: ProjectMedia;
     secondary?: ProjectMedia;
   };
+  priority?: boolean;
   project: Project;
 }
 
-function ProjectBlock({ align, category, media, project }: ProjectBlockProps) {
-  const mediaContent = <ProjectMediaComposition media={media} project={project} />;
+function ProjectBlock({ align, category, media, priority = false, project }: ProjectBlockProps) {
+  const mediaContent = <ProjectMediaComposition media={media} priority={priority} project={project} />;
   const textContent = (
     <div className="flex h-full flex-col justify-center">
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-neutral-400">
@@ -398,10 +409,11 @@ interface ProjectMediaCompositionProps {
     primary?: ProjectMedia;
     secondary?: ProjectMedia;
   };
+  priority?: boolean;
   project: Project;
 }
 
-function ProjectMediaComposition({ media, project }: ProjectMediaCompositionProps) {
+function ProjectMediaComposition({ media, priority = false, project }: ProjectMediaCompositionProps) {
   return (
     <div className="relative min-h-[360px] sm:min-h-[500px]">
       <Link
@@ -411,7 +423,12 @@ function ProjectMediaComposition({ media, project }: ProjectMediaCompositionProp
             : "relative h-[420px] w-full sm:h-[560px]"
           }`}
       >
-        <ProjectImage media={media.primary} title={project.title} sizes="(min-width: 1024px) 52vw, 100vw" />
+        <ProjectImage
+          media={media.primary}
+          priority={priority}
+          title={project.title}
+          sizes="(min-width: 1024px) 52vw, 100vw"
+        />
       </Link>
 
       {media.secondary ? (
@@ -432,11 +449,12 @@ function ProjectMediaComposition({ media, project }: ProjectMediaCompositionProp
 
 interface ProjectImageProps {
   media?: ProjectMedia;
+  priority?: boolean;
   sizes: string;
   title: string;
 }
 
-function ProjectImage({ media, sizes, title }: ProjectImageProps) {
+function ProjectImage({ media, priority = false, sizes, title }: ProjectImageProps) {
   return (
     <div className="relative h-full w-full">
       <div className="absolute inset-0 bg-[linear-gradient(135deg,#efede8,#b7b9af_48%,#262626)]" />
@@ -445,6 +463,7 @@ function ProjectImage({ media, sizes, title }: ProjectImageProps) {
           src={media.url}
           alt={media.altText ?? title}
           fill
+          loading={priority ? "eager" : "lazy"}
           sizes={sizes}
           className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.018]"
         />

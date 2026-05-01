@@ -1,9 +1,4 @@
-import { AboutSection } from "@/components/home/AboutSection";
-import { ContactCTASection } from "@/components/home/ContactCTASection";
-import { FeaturedProjectsCarousel } from "@/components/home/FeaturedProjectsCarousel";
-import { SpecializationAreasSection } from "@/components/home/SpecializationAreasSection";
-import { Footer } from "@/components/layout/Footer";
-import { Navbar } from "@/components/layout/Navbar";
+import { HomePageClient } from "@/components/home/HomePageClient";
 import {
   getActiveProjectCategories,
   getActiveProjects,
@@ -13,22 +8,13 @@ import {
 } from "@/lib/portfolio-data";
 
 export default function Home() {
-  const studioProfile = getStudioProfile();
-  const activeProjects = getActiveProjects();
-  const featuredProjects = getFeaturedProjects();
-  const projectCategories = getActiveProjectCategories();
-  const contactChannels = getContactChannels();
+  const initialData = {
+    studioProfile: getStudioProfile(),
+    activeProjects: getActiveProjects(),
+    featuredProjects: getFeaturedProjects(),
+    projectCategories: getActiveProjectCategories(),
+    contactChannels: getContactChannels(),
+  };
 
-  return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-white text-neutral-950">
-        <FeaturedProjectsCarousel projects={featuredProjects} categories={projectCategories} />
-        <SpecializationAreasSection categories={projectCategories} projects={activeProjects} />
-        <AboutSection studioProfile={studioProfile} />
-        <ContactCTASection contactChannels={contactChannels} />
-      </main>
-      <Footer studioProfile={studioProfile} contactChannels={contactChannels} />
-    </>
-  );
+  return <HomePageClient initialData={initialData} />;
 }

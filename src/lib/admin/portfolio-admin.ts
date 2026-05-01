@@ -1,0 +1,99 @@
+import {
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  collection,
+} from "firebase/firestore";
+
+import { db } from "@/lib/firebase";
+import type { Project, ProjectCategory } from "@/types/portfolio";
+
+function sortBySortOrder<T extends { sortOrder: number }>(items: T[]) {
+  return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+function withId<T extends { id: string }>(id: string, data: T) {
+  return { ...data, id };
+}
+
+export async function getAdminProjects() {
+  const snapshot = await getDocs(collection(db, "projects"));
+
+  return sortBySortOrder(
+    snapshot.docs.map((item) => withId(item.id, item.data() as Project)),
+  );
+}
+
+export async function getAdminProject(projectId: string) {
+  const snapshot = await getDoc(doc(db, "projects", projectId));
+
+  if (!snapshot.exists()) {
+    return undefined;
+  }
+
+  return withId(snapshot.id, snapshot.data() as Project);
+}
+
+export async function saveAdminProject(project: Project) {
+  const now = new Date().toISOString();
+  const projectRef = doc(db, "projects", project.id);
+
+  await setDoc(
+    projectRef,
+    {
+      ...project,
+      updatedAt: now,
+      createdAt: project.createdAt ?? now,
+    },
+    { merge: true },
+  );
+}
+
+export async function setAdminProjectActive(projectId: string, isActive: boolean) {
+  await updateDoc(doc(db, "projects", projectId), {
+    isActive,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getAdminCategories() {
+  const snapshot = await getDocs(collection(db, "project_categories"));
+
+  return sortBySortOrder(
+    snapshot.docs.map((item) => withId(item.id, item.data() as ProjectCategory)),
+  );
+}
+
+export async function getAdminCategory(categoryId: string) {
+  const snapshot = await getDoc(doc(db, "project_categories", categoryId));
+
+  if (!snapshot.exists()) {
+    return undefined;
+  }
+
+  return withId(snapshot.id, snapshot.data() as ProjectCategory);
+}
+
+export async function saveAdminCategory(category: ProjectCategory) {
+  const now = new Date().toISOString();
+  const categoryRef = doc(db, "project_categories", category.id);
+
+  await setDoc(
+    categoryRef,
+    {
+      ...category,
+      updatedAt: now,
+      createdAt: category.createdAt ?? now,
+    },
+    { merge: true },
+  );
+}
+
+export async function setAdminCategoryActive(categoryId: string, isActive: boolean) {
+  await updateDoc(doc(db, "project_categories", categoryId), {
+    isActive,
+    updatedAt: new Date().toISOString(),
+  });
+}

@@ -41,7 +41,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
           projectMediaByProjectId={projectMediaByProjectId}
         />
       </main>
-      <Footer studioProfile={studioProfile} contactChannels={contactChannels} />
+      <Footer variant="dark" studioProfile={studioProfile} contactChannels={contactChannels} />
     </>
   );
 }

@@ -3,15 +3,20 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 
+import { Footer } from "@/components/layout/Footer";
+import { Navbar } from "@/components/layout/Navbar";
+import { useContactData } from "@/hooks/useContactData";
+import type { ContactData } from "@/lib/firestore/contact";
 import type { StudioProfile } from "@/types/portfolio";
 
 interface ContactPageClientProps {
-  studioProfile: StudioProfile;
+  initialData: ContactData;
 }
 
 const projectTypeOptions = ["Residencial", "Comercial", "Interiores", "Urbano", "Consultorios", "Otro"];
 
-export function ContactPageClient({ studioProfile }: ContactPageClientProps) {
+export function ContactPageClient({ initialData }: ContactPageClientProps) {
+  const { contactChannels, studioProfile } = useContactData(initialData);
   const [projectType, setProjectType] = useState("");
   const [isProjectTypeOpen, setIsProjectTypeOpen] = useState(false);
 
@@ -26,7 +31,9 @@ export function ContactPageClient({ studioProfile }: ContactPageClientProps) {
   }
 
   return (
-    <main className="min-h-screen bg-white text-neutral-950">
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-white text-neutral-950">
       <section className="px-6 py-16 sm:px-8 lg:px-12 lg:py-24">
         <div className="mx-auto max-w-7xl">
           <p className="section-label">Contacto</p>
@@ -203,7 +210,9 @@ export function ContactPageClient({ studioProfile }: ContactPageClientProps) {
           </form>
         </div>
       </section>
-    </main>
+      </main>
+      <Footer variant="dark" studioProfile={studioProfile} contactChannels={contactChannels} />
+    </>
   );
 }
 

@@ -2,6 +2,43 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Lectura publica para la informacion general usada por la web publica.
+    match /studio_profile/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Lectura publica de proyectos visibles en el portafolio.
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+
+      // Lectura publica de media asociada a cada proyecto.
+      match /media/{mediaId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
+    }
+
+    // Lectura publica de areas/especializaciones del portafolio.
+    match /project_categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Lectura publica de canales de contacto mostrados en la web publica.
+    match /contact_channels/{channelId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Lectura publica de miembros del equipo mostrados en la web publica.
+    match /team_members/{memberId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Todo lo demas queda cerrado por defecto.
     match /{document=**} {
       allow read, write: if false;
     }
