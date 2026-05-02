@@ -136,7 +136,7 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
               {title}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-neutral-600">
-              Edita el perfil público, enlaces profesionales, orden y fotografía del miembro.
+              Edita el perfil público, orden, estado y fotografía del miembro.
             </p>
           </div>
           <button
@@ -208,21 +208,15 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
                   value={member.role ?? ""}
                   onChange={(value) => updateField("role", value)}
                 />
-                <TextField
-                  label="Email"
-                  type="email"
-                  value={member.email ?? ""}
-                  onChange={(value) => updateField("email", value)}
+                <SwitchField
+                  checked={member.isActive}
+                  label="Activo"
+                  onChange={(value) => updateField("isActive", value)}
                 />
                 <NumberField
                   label="Orden"
                   value={member.sortOrder}
                   onChange={(value) => updateField("sortOrder", value ?? 0)}
-                />
-                <TextField
-                  label="Instagram"
-                  value={member.instagramUrl ?? ""}
-                  onChange={(value) => updateField("instagramUrl", value)}
                 />
                 <TextField
                   label="LinkedIn"
@@ -238,11 +232,6 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
                     onChange={(event) => updateField("bio", event.target.value)}
                   />
                 </label>
-                <SwitchField
-                  checked={member.isActive}
-                  label="Activo"
-                  onChange={(value) => updateField("isActive", value)}
-                />
               </div>
             </section>
           </div>
