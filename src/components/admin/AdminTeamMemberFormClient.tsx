@@ -208,20 +208,10 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
                   value={member.role ?? ""}
                   onChange={(value) => updateField("role", value)}
                 />
-                <SwitchField
-                  checked={member.isActive}
-                  label="Activo"
-                  onChange={(value) => updateField("isActive", value)}
-                />
                 <NumberField
                   label="Orden"
                   value={member.sortOrder}
                   onChange={(value) => updateField("sortOrder", value ?? 0)}
-                />
-                <TextField
-                  label="LinkedIn"
-                  value={member.linkedinUrl ?? ""}
-                  onChange={(value) => updateField("linkedinUrl", value)}
                 />
                 <label className="block lg:col-span-2">
                   <FieldLabel>Biografía breve</FieldLabel>
@@ -232,6 +222,16 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
                     onChange={(event) => updateField("bio", event.target.value)}
                   />
                 </label>
+                <SwitchField
+                  checked={member.isActive}
+                  label="Activo"
+                  onChange={(value) => updateField("isActive", value)}
+                />
+                <TextField
+                  label="LinkedIn"
+                  value={member.linkedinUrl ?? ""}
+                  onChange={(value) => updateField("linkedinUrl", value)}
+                />
               </div>
             </section>
           </div>
@@ -322,7 +322,7 @@ function SwitchField({ checked, label, onChange }: { checked: boolean; label: st
   return (
     <button
       type="button"
-      className="flex min-h-14 cursor-pointer items-center justify-between gap-4 border border-neutral-300 px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+      className="mt-3 flex h-[54px] w-full cursor-pointer items-center justify-between gap-4 border border-neutral-300 px-4 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
