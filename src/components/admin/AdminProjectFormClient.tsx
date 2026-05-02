@@ -10,26 +10,34 @@ import {
   getAdminCategories,
   getAdminProject,
   getAdminProjectMedia,
+  getAdminProjects,
   saveAdminProject,
   setAdminProjectMediaVisible,
 } from "@/lib/admin/portfolio-admin";
 import { uploadProjectCoverMedia, uploadProjectMedia } from "@/lib/storage";
-import type { Project, ProjectCategory, ProjectMedia, ProjectMediaRole, ProjectStage } from "@/types/portfolio";
+import type {
+  Project,
+  ProjectCategory,
+  ProjectMedia,
+  ProjectMediaRole,
+  ProjectStage,
+} from "@/types/portfolio";
 
-const projectStages: ProjectStage[] = [
-  "conceptual",
-  "design",
-  "under_construction",
-  "built",
-  "completed",
+const projectStageOptions: Array<{ label: string; value: ProjectStage }> = [
+  { label: "Conceptual", value: "conceptual" },
+  { label: "Diseño", value: "design" },
+  { label: "En construcción", value: "under_construction" },
+  { label: "Construido", value: "built" },
+  { label: "Completado", value: "completed" },
 ];
-const allowedMediaRoles: ProjectMediaRole[] = [
-  "gallery",
-  "plan",
-  "render",
-  "construction",
-  "detail",
-  "technical_sheet",
+
+const mediaRoleOptions: Array<{ label: string; value: ProjectMediaRole }> = [
+  { label: "Galería", value: "gallery" },
+  { label: "Plano", value: "plan" },
+  { label: "Render", value: "render" },
+  { label: "Construcción", value: "construction" },
+  { label: "Detalle", value: "detail" },
+  { label: "Ficha técnica", value: "technical_sheet" },
 ];
 
 interface AdminProjectFormClientProps {
@@ -47,10 +55,12 @@ interface MediaFormState {
 
 export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProps) {
   const router = useRouter();
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [coverUploadMessage, setCoverUploadMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [form, setForm] = useState<Project>(() => createEmptyProject());
+  const [isCategorySelectOpen, setIsCategorySelectOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(Boolean(projectId));
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
@@ -64,15 +74,23 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
     () => categories.filter((category) => category.isActive),
     [categories],
   );
+  const selectedCategoryLabels = form.categoryIds
+    .map((categoryId) => categories.find((category) => category.id === categoryId)?.name)
+    .filter(Boolean)
+    .join(", ");
   const currentProjectId = form.id || projectId;
+  const hasDuplicateSortOrder =
+    form.sortOrder !== undefined &&
+    allProjects.some((project) => project.id !== form.id && project.sortOrder === form.sortOrder);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadFormData() {
       try {
-        const [allCategories, project] = await Promise.all([
+        const [allCategories, projects, project] = await Promise.all([
           getAdminCategories(),
+          getAdminProjects(),
           projectId ? getAdminProject(projectId) : Promise.resolve(undefined),
         ]);
 
@@ -81,6 +99,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
         }
 
         setCategories(allCategories);
+        setAllProjects(projects);
 
         if (project) {
           setForm(project);
@@ -253,93 +272,80 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
         {isLoading ? (
           <p className="mt-10 text-sm text-neutral-500">Cargando formulario...</p>
         ) : (
-          <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_0.72fr]">
-            <section className="space-y-6 border border-neutral-200 bg-white p-7">
-              <TextField label="Título" value={form.title} onChange={(value) => updateField("title", value)} />
-              <TextField label="Slug" value={form.slug} onChange={(value) => updateField("slug", slugify(value))} />
-              <TextField label="Subtítulo" value={form.subtitle ?? ""} onChange={(value) => updateField("subtitle", value)} />
-              <TextArea label="Resumen" rows={4} value={form.summary} onChange={(value) => updateField("summary", value)} />
-              <TextArea label="Descripción" rows={8} value={form.description} onChange={(value) => updateField("description", value)} />
-              <div className="grid gap-5 sm:grid-cols-3">
+          <div className="mt-10 space-y-8">
+            <section className="border border-neutral-200 bg-white p-7">
+              <SectionHeading
+                label="Información general"
+                title="Datos principales"
+                description="Define la información editorial básica que se mostrará en el portafolio público."
+              />
+              <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                <TextField label="Título" value={form.title} onChange={(value) => updateField("title", value)} />
+                <TextField label="Slug" value={form.slug} onChange={(value) => updateField("slug", slugify(value))} />
+                <TextField label="Subtítulo" value={form.subtitle ?? ""} onChange={(value) => updateField("subtitle", value)} />
                 <TextField label="Ubicación" value={form.location ?? ""} onChange={(value) => updateField("location", value)} />
+                <TextArea label="Resumen" rows={4} value={form.summary} onChange={(value) => updateField("summary", value)} />
+                <TextArea label="Descripción" rows={4} value={form.description} onChange={(value) => updateField("description", value)} />
                 <NumberField label="Año" value={form.year} onChange={(value) => updateField("year", value)} />
                 <NumberField label="Área m²" value={form.areaM2} onChange={(value) => updateField("areaM2", value)} />
               </div>
-              <TextField
-                label="Cover URL"
-                value={form.coverMedia?.url ?? ""}
-                onChange={(value) =>
-                  updateField("coverMedia", {
-                    assetType: "image",
-                    storagePath: form.coverMedia?.storagePath,
-                    url: value,
-                    altText: form.coverMedia?.altText,
-                  })
-                }
-              />
-              <TextField
-                label="Cover alt text"
-                value={form.coverMedia?.altText ?? ""}
-                onChange={(value) =>
-                  updateField("coverMedia", {
-                    assetType: "image",
-                    storagePath: form.coverMedia?.storagePath,
-                    url: form.coverMedia?.url ?? "",
-                    altText: value,
-                  })
-                }
-              />
             </section>
 
-            <aside className="space-y-6">
+            <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
               <section className="border border-neutral-200 bg-white p-7">
-                <h2 className="font-title text-2xl font-medium">Publicación</h2>
-                <div className="mt-6 space-y-5">
+                <SectionHeading label="Publicación" title="Estado y orden" />
+                <div className="mt-8 space-y-5">
                   <SelectField
                     label="Etapa"
                     value={form.projectStage ?? "design"}
-                    options={projectStages}
+                    options={projectStageOptions}
                     onChange={(value) => updateField("projectStage", value as ProjectStage)}
                   />
                   <NumberField label="Orden" value={form.sortOrder} onChange={(value) => updateField("sortOrder", value ?? 0)} />
+                  {form.sortOrder === undefined ? (
+                    <p className="text-sm text-red-600">El orden debe ser un número.</p>
+                  ) : null}
+                  {hasDuplicateSortOrder ? (
+                    <p className="text-sm text-amber-700">
+                      Otro proyecto ya usa este orden. Puedes guardarlo, pero revisa la secuencia editorial.
+                    </p>
+                  ) : null}
                   <CheckboxField label="Proyecto destacado" checked={form.isFeatured} onChange={(value) => updateField("isFeatured", value)} />
                   <CheckboxField label="Activo" checked={form.isActive} onChange={(value) => updateField("isActive", value)} />
                 </div>
               </section>
 
               <section className="border border-neutral-200 bg-white p-7">
-                <h2 className="font-title text-2xl font-medium">Especializaciones</h2>
-                <div className="mt-6 space-y-3">
-                  {activeCategories.map((category) => (
-                    <label key={category.id} className="flex items-center gap-3 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={form.categoryIds.includes(category.id)}
-                        onChange={() => toggleCategory(category.id)}
-                      />
-                      {category.name}
-                    </label>
-                  ))}
+                <SectionHeading label="Especializaciones" title="Áreas del proyecto" />
+                <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                  <MultiCategorySelect
+                    categories={activeCategories}
+                    isOpen={isCategorySelectOpen}
+                    onOpenChange={() => setIsCategorySelectOpen((current) => !current)}
+                    onToggle={toggleCategory}
+                    selectedIds={form.categoryIds}
+                    selectedLabel={selectedCategoryLabels || "Seleccionar categorías"}
+                  />
+                  <SelectField
+                    label="Especialización principal"
+                    value={form.primaryCategoryId ?? ""}
+                    options={form.categoryIds.map((categoryId) => ({
+                      label: categories.find((category) => category.id === categoryId)?.name ?? categoryId,
+                      value: categoryId,
+                    }))}
+                    onChange={(value) => updateField("primaryCategoryId", value)}
+                  />
                 </div>
-                <SelectField
-                  label="Especialización principal"
-                  value={form.primaryCategoryId ?? ""}
-                  options={form.categoryIds}
-                  optionLabels={new Map(categories.map((category) => [category.id, category.name]))}
-                  onChange={(value) => updateField("primaryCategoryId", value)}
-                />
               </section>
-            </aside>
+            </div>
 
-            <section className="space-y-6 border border-neutral-200 bg-white p-7 lg:col-span-2">
+            <section className="border border-neutral-200 bg-white p-7">
               <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-                <div>
-                  <p className="section-label">Media</p>
-                  <h2 className="mt-4 font-title text-3xl font-medium">Imagen protagonista</h2>
-                  <p className="mt-4 text-sm leading-7 text-neutral-600">
-                    Sube JPG, PNG o WebP. Tamaño máximo: 5 MB.
-                  </p>
-                </div>
+                <SectionHeading
+                  label="Imagen protagonista"
+                  title="Portada del proyecto"
+                  description="Esta imagen abre la página de detalle y representa el proyecto en listados."
+                />
                 <div>
                   {form.coverMedia?.url ? (
                     <div className="overflow-hidden border border-neutral-200 bg-neutral-100">
@@ -355,6 +361,30 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                       Sin portada
                     </div>
                   )}
+                  <TextField
+                    label="Alt text"
+                    value={form.coverMedia?.altText ?? ""}
+                    onChange={(value) =>
+                      updateField("coverMedia", {
+                        assetType: "image",
+                        storagePath: form.coverMedia?.storagePath,
+                        url: form.coverMedia?.url ?? "",
+                        altText: value,
+                      })
+                    }
+                  />
+                  <TextField
+                    label="URL de imagen"
+                    value={form.coverMedia?.url ?? ""}
+                    onChange={(value) =>
+                      updateField("coverMedia", {
+                        assetType: "image",
+                        storagePath: form.coverMedia?.storagePath,
+                        url: value,
+                        altText: form.coverMedia?.altText,
+                      })
+                    }
+                  />
                   <label className="mt-5 inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950">
                     {isUploadingCover ? "Subiendo..." : "Subir/reemplazar portada"}
                     <input
@@ -375,30 +405,28 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
               </div>
             </section>
 
-            <section className="space-y-8 border border-neutral-200 bg-white p-7 lg:col-span-2">
-              <div>
-                <p className="section-label">Subcolección media</p>
-                <h2 className="mt-4 font-title text-3xl font-medium">Media adicional</h2>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600">
-                  Los archivos se guardan en Storage y se registran en projects/{currentProjectId ?? "projectId"}/media.
-                </p>
-              </div>
+            <section className="space-y-8 border border-neutral-200 bg-white p-7">
+              <SectionHeading
+                label="Media adicional"
+                title="Galería y documentos"
+                description="Agrega imágenes, planos o documentos que complementen la presentación del proyecto."
+              />
 
-              <div className="grid gap-5 lg:grid-cols-3">
+              <div className="grid gap-5 lg:grid-cols-5">
                 <SelectField
                   label="Role"
                   value={mediaForm.role}
-                  options={allowedMediaRoles}
+                  options={mediaRoleOptions}
                   onChange={(value) => setMediaForm((current) => ({ ...current, role: value as ProjectMediaRole }))}
                 />
                 <TextField label="Título" value={mediaForm.title} onChange={(value) => setMediaForm((current) => ({ ...current, title: value }))} />
                 <NumberField label="Orden" value={mediaForm.sortOrder} onChange={(value) => setMediaForm((current) => ({ ...current, sortOrder: value ?? 0 }))} />
                 <TextField label="Alt text" value={mediaForm.altText} onChange={(value) => setMediaForm((current) => ({ ...current, altText: value }))} />
                 <TextField label="Descripción" value={mediaForm.description} onChange={(value) => setMediaForm((current) => ({ ...current, description: value }))} />
-                <CheckboxField label="Visible" checked={mediaForm.isVisible} onChange={(value) => setMediaForm((current) => ({ ...current, isVisible: value }))} />
               </div>
 
-              <div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <CheckboxField label="Visible" checked={mediaForm.isVisible} onChange={(value) => setMediaForm((current) => ({ ...current, isVisible: value }))} />
                 <label className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800">
                   {isUploadingMedia ? "Subiendo..." : "Subir media"}
                   <input
@@ -409,13 +437,12 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                     onChange={handleMediaUpload}
                   />
                 </label>
-                {!currentProjectId ? (
-                  <p className="mt-3 text-sm text-neutral-500">Guarda el proyecto antes de subir media adicional.</p>
-                ) : null}
-                {mediaErrorMessage ? (
-                  <p className="mt-3 text-sm text-red-600">{mediaErrorMessage}</p>
-                ) : null}
               </div>
+
+              {!currentProjectId ? (
+                <p className="text-sm text-neutral-500">Guarda el proyecto antes de subir media adicional.</p>
+              ) : null}
+              {mediaErrorMessage ? <p className="text-sm text-red-600">{mediaErrorMessage}</p> : null}
 
               <div className="divide-y divide-neutral-200 border-y border-neutral-200">
                 {projectMedia.length === 0 ? (
@@ -426,7 +453,9 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                       <MediaPreview media={media} />
                       <div>
                         <h3 className="font-title text-xl font-medium">{media.title ?? media.id}</h3>
-                        <p className="mt-1 text-sm text-neutral-500">{media.role} · {media.mimeType ?? media.assetType}</p>
+                        <p className="mt-1 text-sm text-neutral-500">
+                          {getMediaRoleLabel(media.role)} · {media.mimeType ?? media.assetType}
+                        </p>
                       </div>
                       <span className={`w-fit border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${media.isVisible ? "border-neutral-950 bg-neutral-950 text-white" : "border-neutral-200 text-neutral-400"}`}>
                         {media.isVisible ? "Visible" : "Oculta"}
@@ -506,6 +535,75 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function getMediaRoleLabel(role: ProjectMediaRole) {
+  return mediaRoleOptions.find((option) => option.value === role)?.label ?? role;
+}
+
+function SectionHeading({
+  description,
+  label,
+  title,
+}: {
+  description?: string;
+  label: string;
+  title: string;
+}) {
+  return (
+    <div>
+      <p className="section-label">{label}</p>
+      <h2 className="mt-4 font-title text-3xl font-medium">{title}</h2>
+      {description ? <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600">{description}</p> : null}
+    </div>
+  );
+}
+
+function MultiCategorySelect({
+  categories,
+  isOpen,
+  onOpenChange,
+  onToggle,
+  selectedIds,
+  selectedLabel,
+}: {
+  categories: ProjectCategory[];
+  isOpen: boolean;
+  onOpenChange: () => void;
+  onToggle: (categoryId: string) => void;
+  selectedIds: string[];
+  selectedLabel: string;
+}) {
+  return (
+    <div className="relative">
+      <FieldLabel>Categorías</FieldLabel>
+      <button
+        type="button"
+        className="mt-3 flex w-full cursor-pointer items-center justify-between border border-neutral-300 bg-white px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none"
+        onClick={onOpenChange}
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <span className={`text-neutral-400 transition ${isOpen ? "rotate-180" : ""}`}>↓</span>
+      </button>
+      {isOpen ? (
+        <div className="absolute left-0 right-0 z-30 mt-2 max-h-72 overflow-auto border border-neutral-200 bg-white p-2 shadow-[0_18px_45px_rgba(0,0,0,0.08)]">
+          {categories.map((category) => (
+            <label
+              key={category.id}
+              className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm transition hover:bg-neutral-50"
+            >
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(category.id)}
+                onChange={() => onToggle(category.id)}
+              />
+              {category.name}
+            </label>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function MediaPreview({ media }: { media: ProjectMedia }) {
   if (media.assetType === "pdf") {
     return (
@@ -555,27 +653,25 @@ function TextArea({ label, onChange, rows, value }: { label: string; onChange: (
   );
 }
 
-function SelectField({
+function SelectField<T extends string>({
   label,
   onChange,
-  optionLabels,
   options,
   value,
 }: {
   label: string;
   onChange: (value: string) => void;
-  optionLabels?: Map<string, string>;
-  options: string[];
+  options: Array<{ label: string; value: T }>;
   value: string;
 }) {
   return (
-    <label className="mt-5 block">
+    <label className="block">
       <FieldLabel>{label}</FieldLabel>
-      <select className="mt-3 w-full border border-neutral-300 bg-white px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none" value={value} onChange={(event) => onChange(event.target.value)}>
+      <select className="mt-3 w-full cursor-pointer border border-neutral-300 bg-white px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none" value={value} onChange={(event) => onChange(event.target.value)}>
         <option value="">Seleccionar</option>
         {options.map((option) => (
-          <option key={option} value={option}>
-            {optionLabels?.get(option) ?? option}
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -585,7 +681,7 @@ function SelectField({
 
 function CheckboxField({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
   return (
-    <label className="flex items-center gap-3 text-sm font-medium text-neutral-700">
+    <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-neutral-700">
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       {label}
     </label>
