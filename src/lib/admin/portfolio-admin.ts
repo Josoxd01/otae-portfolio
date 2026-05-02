@@ -1,4 +1,5 @@
 import {
+  addDoc,
   doc,
   getDoc,
   getDocs,
@@ -8,7 +9,13 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
-import type { Project, ProjectCategory } from "@/types/portfolio";
+import type {
+  Project,
+  ProjectCategory,
+  ProjectMedia,
+  StudioProfile,
+  TeamMember,
+} from "@/types/portfolio";
 
 function sortBySortOrder<T extends { sortOrder: number }>(items: T[]) {
   return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -58,6 +65,37 @@ export async function setAdminProjectActive(projectId: string, isActive: boolean
   });
 }
 
+export async function getAdminProjectMedia(projectId: string) {
+  const snapshot = await getDocs(collection(db, "projects", projectId, "media"));
+
+  return sortBySortOrder(
+    snapshot.docs.map((item) => withId(item.id, item.data() as ProjectMedia)),
+  );
+}
+
+export async function createAdminProjectMedia(projectId: string, media: Omit<ProjectMedia, "id">) {
+  const mediaRef = await addDoc(collection(db, "projects", projectId, "media"), media);
+  await updateDoc(mediaRef, { id: mediaRef.id });
+
+  return { ...media, id: mediaRef.id };
+}
+
+export async function updateAdminProjectMedia(
+  projectId: string,
+  mediaId: string,
+  media: Partial<ProjectMedia>,
+) {
+  await updateDoc(doc(db, "projects", projectId, "media", mediaId), media);
+}
+
+export async function setAdminProjectMediaVisible(
+  projectId: string,
+  mediaId: string,
+  isVisible: boolean,
+) {
+  await updateAdminProjectMedia(projectId, mediaId, { isVisible });
+}
+
 export async function getAdminCategories() {
   const snapshot = await getDocs(collection(db, "project_categories"));
 
@@ -96,4 +134,47 @@ export async function setAdminCategoryActive(categoryId: string, isActive: boole
     isActive,
     updatedAt: new Date().toISOString(),
   });
+}
+
+export async function getAdminStudioProfile() {
+  const snapshot = await getDoc(doc(db, "studio_profile", "main"));
+
+  if (!snapshot.exists()) {
+    return undefined;
+  }
+
+  return snapshot.data() as StudioProfile;
+}
+
+export async function saveAdminStudioProfile(studioProfile: StudioProfile) {
+  await setDoc(
+    doc(db, "studio_profile", "main"),
+    {
+      ...studioProfile,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true },
+  );
+}
+
+export async function getAdminTeamMembers() {
+  const snapshot = await getDocs(collection(db, "team_members"));
+
+  return sortBySortOrder(
+    snapshot.docs.map((item) => withId(item.id, item.data() as TeamMember)),
+  );
+}
+
+export async function getAdminTeamMember(memberId: string) {
+  const snapshot = await getDoc(doc(db, "team_members", memberId));
+
+  if (!snapshot.exists()) {
+    return undefined;
+  }
+
+  return withId(snapshot.id, snapshot.data() as TeamMember);
+}
+
+export async function saveAdminTeamMember(member: TeamMember) {
+  await setDoc(doc(db, "team_members", member.id), member, { merge: true });
 }

@@ -44,6 +44,7 @@ export interface MediaReference {
   url: string;
   assetType: AssetType;
   altText?: string;
+  storagePath?: string;
   title?: string;
 }
 
@@ -101,6 +102,7 @@ export interface ProjectMedia {
   id: string;
   mediaAssetId?: string;
   url: string;
+  storagePath?: string;
   assetType: AssetType;
   mimeType?: string;
   role: ProjectMediaRole;

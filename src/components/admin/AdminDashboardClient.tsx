@@ -19,8 +19,8 @@ const modules = [
   },
   {
     description: "Editar textos institucionales, imágenes del estudio y datos generales.",
-    href: "/admin",
-    label: "Próximamente",
+    href: "/admin/studio",
+    label: "Gestionar estudio",
     title: "Estudio",
   },
   {
@@ -31,8 +31,8 @@ const modules = [
   },
   {
     description: "Actualizar miembros, cargos, biografías y enlaces profesionales.",
-    href: "/admin",
-    label: "Próximamente",
+    href: "/admin/team",
+    label: "Gestionar equipo",
     title: "Equipo",
   },
 ];

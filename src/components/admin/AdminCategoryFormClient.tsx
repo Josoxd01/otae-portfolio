@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { getAdminCategory, saveAdminCategory } from "@/lib/admin/portfolio-admin";
+import { uploadCategoryCoverMedia } from "@/lib/storage";
 import type { CategoryGroup, ProjectCategory } from "@/types/portfolio";
 
 const categoryGroups: CategoryGroup[] = ["portfolio_area", "typology", "content_area"];
@@ -20,6 +21,8 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(Boolean(categoryId));
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -70,6 +73,42 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
 
   function updateField<K extends keyof ProjectCategory>(field: K, value: ProjectCategory[K]) {
     setCategory((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handleCoverUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    const currentCategoryId = category.id || category.slug || slugify(category.name);
+
+    if (!file || !currentCategoryId) {
+      return;
+    }
+
+    setErrorMessage("");
+    setUploadMessage("");
+    setIsUploadingCover(true);
+
+    try {
+      const uploaded = await uploadCategoryCoverMedia(currentCategoryId, file);
+      const updatedCategory = normalizeCategory({
+        ...category,
+        id: currentCategoryId,
+        coverMedia: {
+          assetType: "image",
+          altText: category.coverMedia?.altText || category.name,
+          storagePath: uploaded.storagePath,
+          url: uploaded.url,
+        },
+      });
+
+      await saveAdminCategory(updatedCategory);
+      setCategory(updatedCategory);
+      setUploadMessage("Imagen de categoría actualizada.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo subir la imagen.");
+    } finally {
+      setIsUploadingCover(false);
+    }
   }
 
   return (
@@ -134,6 +173,7 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
                 updateField("coverMedia", {
                   assetType: "image",
                   url: value,
+                  storagePath: category.coverMedia?.storagePath,
                   altText: category.coverMedia?.altText,
                 })
               }
@@ -145,10 +185,41 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
                 updateField("coverMedia", {
                   assetType: "image",
                   url: category.coverMedia?.url ?? "",
+                  storagePath: category.coverMedia?.storagePath,
                   altText: value,
                 })
               }
             />
+            <div className="lg:col-span-2">
+              {category.coverMedia?.url ? (
+                <div className="overflow-hidden border border-neutral-200 bg-neutral-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={category.coverMedia.url}
+                    alt={category.coverMedia.altText ?? category.name}
+                    className="h-72 w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-72 items-center justify-center border border-neutral-200 bg-neutral-100 text-sm text-neutral-400">
+                  Sin imagen de categoría
+                </div>
+              )}
+              <label className="mt-5 inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950">
+                {isUploadingCover ? "Subiendo..." : "Subir/reemplazar imagen"}
+                <input
+                  className="sr-only"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={isUploadingCover || !(category.id || category.slug || category.name)}
+                  onChange={handleCoverUpload}
+                />
+              </label>
+              <p className="mt-3 text-sm text-neutral-500">
+                JPG, PNG o WebP. Máximo 5 MB. Si es una categoría nueva, escribe primero nombre o slug.
+              </p>
+              {uploadMessage ? <p className="mt-3 text-sm text-neutral-500">{uploadMessage}</p> : null}
+            </div>
             <label className="flex items-center gap-3 text-sm font-medium text-neutral-700">
               <input
                 type="checkbox"
@@ -187,6 +258,7 @@ function normalizeCategory(category: ProjectCategory): ProjectCategory {
       ? {
           assetType: "image",
           url: category.coverMedia.url,
+          storagePath: category.coverMedia.storagePath,
           altText: category.coverMedia.altText || category.name,
         }
       : undefined,

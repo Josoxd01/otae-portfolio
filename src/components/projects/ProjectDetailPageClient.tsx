@@ -10,6 +10,7 @@ import {
   type ProjectDetailPageData,
   useProjectDetailData,
 } from "@/hooks/useProjectDetailData";
+import type { ProjectMedia, ProjectMediaRole } from "@/types/portfolio";
 
 import type { ReactNode } from "react";
 
@@ -18,18 +19,22 @@ interface ProjectDetailPageClientProps {
   slug: string;
 }
 
+const mediaRoleSections: Array<{ role: ProjectMediaRole; title: string }> = [
+  { role: "gallery", title: "Galería" },
+  { role: "plan", title: "Planos" },
+  { role: "render", title: "Renders" },
+  { role: "construction", title: "Obra" },
+  { role: "detail", title: "Detalles" },
+  { role: "technical_sheet", title: "Fichas técnicas" },
+];
+
 export function ProjectDetailPageClient({ initialData, slug }: ProjectDetailPageClientProps) {
   const { categories, contactChannels, project, projectMedia, studioProfile } =
     useProjectDetailData(slug, initialData);
   const primaryCategory = project.primaryCategoryId
     ? categories.find((category) => category.id === project.primaryCategoryId)
     : categories.find((category) => category.id === project.categoryIds[0]);
-  const galleryMedia = projectMedia
-    .filter((media) => media.isVisible && media.assetType === "image" && media.role === "gallery")
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-  const planMedia = projectMedia
-    .filter((media) => media.isVisible && media.assetType === "image" && media.role === "plan")
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const mediaSections = getProjectMediaSections(projectMedia);
 
   return (
     <>
@@ -89,11 +94,23 @@ export function ProjectDetailPageClient({ initialData, slug }: ProjectDetailPage
           </div>
         </section>
 
-        <ProjectMediaGallery background="soft" media={galleryMedia} title="Galería" />
-
-        {planMedia.length > 0 ? (
-          <ProjectMediaGallery background="base" media={planMedia} title="Planos" />
-        ) : null}
+        {mediaSections.map((section, index) =>
+          section.imageMedia.length > 0 ? (
+            <ProjectMediaGallery
+              key={section.role}
+              background={index === 0 ? "soft" : "base"}
+              media={section.imageMedia}
+              title={section.title}
+            />
+          ) : section.pdfMedia.length > 0 ? (
+            <ProjectPdfSection
+              key={section.role}
+              background={index === 0 ? "soft" : "base"}
+              media={section.pdfMedia}
+              title={section.title}
+            />
+          ) : null,
+        )}
 
         <section className="px-6 pb-20 pt-8 sm:px-8 lg:px-12 lg:pb-28">
           <div className="mx-auto max-w-7xl border-t border-neutral-200 pt-10">
@@ -108,6 +125,78 @@ export function ProjectDetailPageClient({ initialData, slug }: ProjectDetailPage
       </main>
       <Footer variant="dark" studioProfile={studioProfile} contactChannels={contactChannels} />
     </>
+  );
+}
+
+function getProjectMediaSections(projectMedia: ProjectMedia[]) {
+  return mediaRoleSections
+    .map((section) => {
+      const roleMedia = projectMedia
+        .filter((media) => media.isVisible && media.role === section.role)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+
+      return {
+        ...section,
+        imageMedia: roleMedia.filter((media) => media.assetType === "image"),
+        pdfMedia: roleMedia.filter((media) => media.assetType === "pdf"),
+      };
+    })
+    .filter((section) => section.imageMedia.length > 0 || section.pdfMedia.length > 0);
+}
+
+function ProjectPdfSection({
+  background,
+  media,
+  title,
+}: {
+  background: "base" | "soft";
+  media: ProjectMedia[];
+  title: string;
+}) {
+  return (
+    <section
+      className={`px-6 py-12 sm:px-8 lg:px-12 lg:py-16 ${
+        background === "soft" ? "bg-neutral-50" : "bg-white"
+      }`}
+    >
+      <div className="mx-auto max-w-7xl">
+        <div className="flex items-end justify-between gap-8">
+          <h2 className="font-title text-3xl font-medium text-neutral-950 sm:text-4xl">
+            {title}
+          </h2>
+          <p className="hidden text-sm text-neutral-400 sm:block">
+            {media.length} {media.length === 1 ? "archivo" : "archivos"}
+          </p>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {media.map((item) => (
+            <a
+              key={item.id}
+              href={item.url}
+              target="_blank"
+              rel="noreferrer"
+              className="border border-neutral-200 bg-white p-6 transition hover:border-neutral-950"
+            >
+              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-400">
+                PDF
+              </span>
+              <span className="mt-4 block font-title text-2xl font-medium text-neutral-950">
+                {item.title ?? "Documento técnico"}
+              </span>
+              {item.description ? (
+                <span className="mt-4 block text-sm leading-7 text-neutral-600">
+                  {item.description}
+                </span>
+              ) : null}
+              <span className="mt-6 inline-flex text-sm font-semibold text-neutral-950">
+                Abrir archivo →
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
