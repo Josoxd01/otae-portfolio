@@ -77,7 +77,7 @@ export function AdminProjectsPageClient() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-neutral-200 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-neutral-400">
+                <tr className="bg-neutral-950 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-white">
                   <th className="w-24 px-5 py-4">Orden</th>
                   <th className="px-5 py-4">Proyecto</th>
                   <th className="w-32 px-5 py-4">Estado</th>
