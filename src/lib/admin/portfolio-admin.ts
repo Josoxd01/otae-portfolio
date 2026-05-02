@@ -261,6 +261,24 @@ export async function saveAdminTeamMember(member: TeamMember) {
   );
 }
 
+export async function updateAdminTeamMemberSortOrders(
+  members: Array<Pick<TeamMember, "id" | "sortOrder">>,
+) {
+  const batch = writeBatch(db);
+
+  members.forEach((member) => {
+    batch.update(doc(db, "team_members", member.id), {
+      sortOrder: member.sortOrder,
+    });
+  });
+
+  await batch.commit();
+}
+
+export async function deleteAdminTeamMember(memberId: string) {
+  await deleteDoc(doc(db, "team_members", memberId));
+}
+
 export async function setAdminTeamMemberActive(memberId: string, isActive: boolean) {
   await updateDoc(doc(db, "team_members", memberId), { isActive });
 }

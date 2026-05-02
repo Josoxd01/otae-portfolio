@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
-import { getAdminTeamMember, saveAdminTeamMember } from "@/lib/admin/portfolio-admin";
+import {
+  getAdminTeamMember,
+  getAdminTeamMembers,
+  saveAdminTeamMember,
+} from "@/lib/admin/portfolio-admin";
 import { uploadTeamMemberPhoto } from "@/lib/storage";
 import type { TeamMember } from "@/types/portfolio";
 
@@ -26,15 +30,19 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
     let isMounted = true;
 
     async function loadMember() {
-      if (!memberId) {
-        return;
-      }
-
       try {
-        const data = await getAdminTeamMember(memberId);
+        const [members, data] = await Promise.all([
+          getAdminTeamMembers(),
+          memberId ? getAdminTeamMember(memberId) : Promise.resolve(undefined),
+        ]);
 
         if (isMounted && data) {
           setMember(data);
+        } else if (isMounted && !memberId) {
+          setMember((current) => ({
+            ...current,
+            sortOrder: getNextMemberSortOrder(members),
+          }));
         }
       } catch (error) {
         console.warn("Could not load team member.", error);
@@ -136,7 +144,7 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
               {title}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-neutral-600">
-              Edita el perfil público, orden, estado y fotografía del miembro.
+              Edita el perfil público, estado y fotografía del miembro.
             </p>
           </div>
           <button
@@ -208,11 +216,6 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
                   value={member.role ?? ""}
                   onChange={(value) => updateField("role", value)}
                 />
-                <NumberField
-                  label="Orden"
-                  value={member.sortOrder}
-                  onChange={(value) => updateField("sortOrder", value ?? 0)}
-                />
                 <label className="block lg:col-span-2">
                   <FieldLabel>Biografía breve</FieldLabel>
                   <textarea
@@ -227,6 +230,9 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
                   label="Activo"
                   onChange={(value) => updateField("isActive", value)}
                 />
+                <p className="flex min-h-[54px] items-center border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm leading-7 text-neutral-500">
+                  El orden se gestiona desde el listado de equipo.
+                </p>
                 <TextField
                   label="LinkedIn"
                   value={member.linkedinUrl ?? ""}
@@ -245,9 +251,18 @@ function createEmptyMember(): TeamMember {
   return {
     id: "",
     name: "",
-    sortOrder: 0,
+    sortOrder: 1,
     isActive: true,
   };
+}
+
+function getNextMemberSortOrder(members: TeamMember[]) {
+  const maxSortOrder = members.reduce(
+    (maxOrder, member) => Math.max(maxOrder, member.sortOrder ?? 0),
+    0,
+  );
+
+  return maxSortOrder > 0 ? maxSortOrder + 1 : 1;
 }
 
 function normalizeMember(member: TeamMember, keepExistingId: boolean): TeamMember {
@@ -299,20 +314,6 @@ function TextField({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  );
-}
-
-function NumberField({ label, onChange, value }: { label: string; onChange: (value?: number) => void; value?: number }) {
-  return (
-    <label className="block">
-      <FieldLabel>{label}</FieldLabel>
-      <input
-        className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
-        type="number"
-        value={value ?? ""}
-        onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)}
       />
     </label>
   );
