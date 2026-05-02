@@ -1,4 +1,4 @@
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { storage } from "@/lib/firebase";
 import type { AssetType, ProjectMediaRole, StudioProfile } from "@/types/portfolio";
@@ -64,6 +64,10 @@ export async function uploadTeamMemberPhoto(memberId: string, file: File) {
   validateProjectCoverFile(file);
 
   return uploadFile(`team-media/${memberId}/photo/${Date.now()}-${safeFileName(file.name)}`, file);
+}
+
+export async function deleteStorageFile(storagePath: string) {
+  await deleteObject(ref(storage, storagePath));
 }
 
 function validateFile(file: File, allowedTypes: string[], typeMessage: string) {

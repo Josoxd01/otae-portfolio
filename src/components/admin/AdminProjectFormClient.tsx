@@ -2,19 +2,21 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, DragEvent, FormEvent, MouseEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   createAdminProjectMedia,
+  deleteAdminProjectMedia,
   getAdminCategories,
   getAdminProject,
   getAdminProjectMedia,
   getAdminProjects,
   saveAdminProject,
   setAdminProjectMediaVisible,
+  updateAdminProjectMediaSortOrders,
 } from "@/lib/admin/portfolio-admin";
-import { uploadProjectCoverMedia, uploadProjectMedia } from "@/lib/storage";
+import { deleteStorageFile, uploadProjectCoverMedia, uploadProjectMedia } from "@/lib/storage";
 import type {
   Project,
   ProjectCategory,
@@ -48,7 +50,6 @@ interface AdminProjectFormClientProps {
 
 interface MediaFormState {
   isVisible: boolean;
-  sortOrder: number;
   title: string;
 }
 
@@ -56,11 +57,14 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
   const router = useRouter();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [coverUploadMessage, setCoverUploadMessage] = useState("");
+  const [deletingMediaId, setDeletingMediaId] = useState("");
+  const [draggedMediaId, setDraggedMediaId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [form, setForm] = useState<Project>(() => createEmptyProject());
   const [isCategorySelectOpen, setIsCategorySelectOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(Boolean(projectId));
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingMediaOrder, setIsSavingMediaOrder] = useState<EditableMediaRole | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [mediaErrorMessage, setMediaErrorMessage] = useState("");
   const [mediaForms, setMediaForms] = useState<Record<EditableMediaRole, MediaFormState>>(() => ({
@@ -80,8 +84,8 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
     .filter(Boolean)
     .join(", ");
   const currentProjectId = form.id || projectId;
-  const galleryMedia = projectMedia.filter((media) => media.role === "gallery");
-  const planMedia = projectMedia.filter((media) => media.role === "plan");
+  const galleryMedia = sortMediaByOrder(projectMedia.filter((media) => media.role === "gallery"));
+  const planMedia = sortMediaByOrder(projectMedia.filter((media) => media.role === "plan"));
 
   useEffect(() => {
     let isMounted = true;
@@ -210,7 +214,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
         role,
         title: mediaForm.title || file.name,
         altText: mediaForm.title || file.name,
-        sortOrder: mediaForm.sortOrder,
+        sortOrder: getNextMediaSortOrder(projectMedia, role),
         isVisible: mediaForm.isVisible,
       });
       updateMediaForm(role, createEmptyMediaForm());
@@ -229,6 +233,119 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
 
     await setAdminProjectMediaVisible(currentProjectId, media.id, !media.isVisible);
     await reloadProjectMedia(currentProjectId);
+  }
+
+  async function handleMediaDrop(role: EditableMediaRole, targetMediaId: string) {
+    if (!currentProjectId || !draggedMediaId || draggedMediaId === targetMediaId || isSavingMediaOrder) {
+      setDraggedMediaId("");
+      return;
+    }
+
+    const roleMedia = sortMediaByOrder(projectMedia.filter((media) => media.role === role));
+    const fromIndex = roleMedia.findIndex((media) => media.id === draggedMediaId);
+    const toIndex = roleMedia.findIndex((media) => media.id === targetMediaId);
+
+    if (fromIndex < 0 || toIndex < 0) {
+      setDraggedMediaId("");
+      return;
+    }
+
+    const previousMedia = projectMedia;
+    const reorderedRoleMedia = moveMedia(roleMedia, fromIndex, toIndex).map((media, index) => ({
+      ...media,
+      sortOrder: index + 1,
+    }));
+    const reorderedById = new Map(reorderedRoleMedia.map((media) => [media.id, media]));
+
+    setProjectMedia(projectMedia.map((media) => reorderedById.get(media.id) ?? media));
+    setDraggedMediaId("");
+    setMediaErrorMessage("");
+    setIsSavingMediaOrder(role);
+
+    try {
+      await updateAdminProjectMediaSortOrders(
+        currentProjectId,
+        reorderedRoleMedia.map((media) => ({
+          id: media.id,
+          sortOrder: media.sortOrder,
+        })),
+      );
+    } catch (error) {
+      console.warn("Could not save media order.", error);
+      setProjectMedia(previousMedia);
+      setMediaErrorMessage("No se pudo guardar el nuevo orden de media.");
+    } finally {
+      setIsSavingMediaOrder(null);
+    }
+  }
+
+  function handleMediaDragStart(event: DragEvent<HTMLButtonElement>, mediaId: string) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", mediaId);
+    setDraggedMediaId(mediaId);
+  }
+
+  function handleMediaDragOver(event: DragEvent<HTMLElement>) {
+    if (draggedMediaId) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    }
+  }
+
+  async function handleDeleteMedia(media: ProjectMedia, role: EditableMediaRole) {
+    if (!currentProjectId || deletingMediaId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "¿Seguro que quieres eliminar este archivo? Esta acción no se puede deshacer.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingMediaId(media.id);
+    setMediaErrorMessage("");
+
+    try {
+      if (media.storagePath) {
+        await deleteStorageFile(media.storagePath);
+      }
+
+      await deleteAdminProjectMedia(currentProjectId, media.id);
+
+      const remainingRoleMedia = sortMediaByOrder(
+        projectMedia.filter((item) => item.role === role && item.id !== media.id),
+      ).map((item, index) => ({
+        ...item,
+        sortOrder: index + 1,
+      }));
+      const reorderedById = new Map(remainingRoleMedia.map((item) => [item.id, item]));
+      const nextMedia = projectMedia
+        .filter((item) => item.id !== media.id)
+        .map((item) => reorderedById.get(item.id) ?? item);
+
+      setProjectMedia(nextMedia);
+      await updateAdminProjectMediaSortOrders(
+        currentProjectId,
+        remainingRoleMedia.map((item) => ({
+          id: item.id,
+          sortOrder: item.sortOrder,
+        })),
+      );
+    } catch (error) {
+      console.warn("Could not delete project media.", error);
+      setMediaErrorMessage(
+        error instanceof Error ? error.message : "No se pudo eliminar el archivo.",
+      );
+    } finally {
+      setDeletingMediaId("");
+    }
+  }
+
+  function handleMediaActionClick(event: MouseEvent<HTMLElement>) {
+    event.stopPropagation();
   }
 
   function handleTitleChange(value: string) {
@@ -418,24 +535,42 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
               <div className="grid gap-8 lg:grid-cols-2">
                 <MediaUploadPanel
                   accept="image/jpeg,image/png,image/webp"
+                  deletingMediaId={deletingMediaId}
                   disabled={!currentProjectId || uploadingRole === "gallery"}
+                  draggedMediaId={draggedMediaId}
                   form={mediaForms.gallery}
+                  isSavingOrder={isSavingMediaOrder === "gallery"}
                   isUploading={uploadingRole === "gallery"}
                   media={galleryMedia}
+                  onDeleteMedia={(media) => handleDeleteMedia(media, "gallery")}
                   onFileChange={(event) => handleMediaUpload(event, "gallery")}
                   onFormChange={(patch) => patchMediaForm("gallery", patch)}
+                  onMediaActionClick={handleMediaActionClick}
+                  onMediaDragEnd={() => setDraggedMediaId("")}
+                  onMediaDragOver={handleMediaDragOver}
+                  onMediaDragStart={handleMediaDragStart}
+                  onMediaDrop={(mediaId) => handleMediaDrop("gallery", mediaId)}
                   onToggleVisibility={toggleMediaVisibility}
                   title="Galería"
                   uploadLabel="Subir imagen"
                 />
                 <MediaUploadPanel
                   accept="image/jpeg,image/png,image/webp,application/pdf"
+                  deletingMediaId={deletingMediaId}
                   disabled={!currentProjectId || uploadingRole === "plan"}
+                  draggedMediaId={draggedMediaId}
                   form={mediaForms.plan}
+                  isSavingOrder={isSavingMediaOrder === "plan"}
                   isUploading={uploadingRole === "plan"}
                   media={planMedia}
+                  onDeleteMedia={(media) => handleDeleteMedia(media, "plan")}
                   onFileChange={(event) => handleMediaUpload(event, "plan")}
                   onFormChange={(patch) => patchMediaForm("plan", patch)}
+                  onMediaActionClick={handleMediaActionClick}
+                  onMediaDragEnd={() => setDraggedMediaId("")}
+                  onMediaDragOver={handleMediaDragOver}
+                  onMediaDragStart={handleMediaDragStart}
+                  onMediaDrop={(mediaId) => handleMediaDrop("plan", mediaId)}
                   onToggleVisibility={toggleMediaVisibility}
                   title="Planos"
                   uploadLabel="Subir archivo"
@@ -464,7 +599,7 @@ function createEmptyProject(): Project {
     categoryIds: [],
     isFeatured: false,
     isActive: true,
-    sortOrder: 10,
+    sortOrder: 1,
     projectStage: "design",
   };
 }
@@ -475,15 +610,40 @@ function getNextProjectSortOrder(projects: Project[]) {
     0,
   );
 
-  return maxSortOrder > 0 ? maxSortOrder + 10 : 10;
+  return maxSortOrder > 0 ? maxSortOrder + 1 : 1;
 }
 
 function createEmptyMediaForm(): MediaFormState {
   return {
     isVisible: true,
-    sortOrder: 0,
     title: "",
   };
+}
+
+function getNextMediaSortOrder(mediaItems: ProjectMedia[], role: EditableMediaRole) {
+  const maxSortOrder = mediaItems
+    .filter((media) => media.role === role)
+    .reduce((maxOrder, media) => Math.max(maxOrder, media.sortOrder ?? 0), 0);
+
+  return maxSortOrder > 0 ? maxSortOrder + 1 : 1;
+}
+
+function sortMediaByOrder(mediaItems: ProjectMedia[]) {
+  return [...mediaItems].sort((a, b) => {
+    if ((a.sortOrder ?? 0) !== (b.sortOrder ?? 0)) {
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    }
+
+    return (a.title ?? a.id).localeCompare(b.title ?? b.id);
+  });
+}
+
+function moveMedia(mediaItems: ProjectMedia[], fromIndex: number, toIndex: number) {
+  const nextMediaItems = [...mediaItems];
+  const [movedMedia] = nextMediaItems.splice(fromIndex, 1);
+  nextMediaItems.splice(toIndex, 0, movedMedia);
+
+  return nextMediaItems;
 }
 
 function normalizeProject(project: Project, keepExistingSlug: boolean): Project {
@@ -588,33 +748,53 @@ function MultiCategorySelect({
 
 function MediaUploadPanel({
   accept,
+  deletingMediaId,
   disabled,
+  draggedMediaId,
   form,
+  isSavingOrder,
   isUploading,
   media,
+  onDeleteMedia,
   onFileChange,
   onFormChange,
+  onMediaActionClick,
+  onMediaDragEnd,
+  onMediaDragOver,
+  onMediaDragStart,
+  onMediaDrop,
   onToggleVisibility,
   title,
   uploadLabel,
 }: {
   accept: string;
+  deletingMediaId: string;
   disabled: boolean;
+  draggedMediaId: string;
   form: MediaFormState;
+  isSavingOrder: boolean;
   isUploading: boolean;
   media: ProjectMedia[];
+  onDeleteMedia: (media: ProjectMedia) => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onFormChange: (patch: Partial<MediaFormState>) => void;
+  onMediaActionClick: (event: MouseEvent<HTMLElement>) => void;
+  onMediaDragEnd: () => void;
+  onMediaDragOver: (event: DragEvent<HTMLElement>) => void;
+  onMediaDragStart: (event: DragEvent<HTMLButtonElement>, mediaId: string) => void;
+  onMediaDrop: (mediaId: string) => void;
   onToggleVisibility: (media: ProjectMedia) => void;
   title: string;
   uploadLabel: string;
 }) {
   return (
     <div className="border border-neutral-200 p-5">
-      <h3 className="font-title text-2xl font-medium">{title}</h3>
-      <div className="mt-6 grid gap-5 sm:grid-cols-2">
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="font-title text-2xl font-medium">{title}</h3>
+        {isSavingOrder ? <p className="text-sm text-neutral-500">Guardando orden...</p> : null}
+      </div>
+      <div className="mt-6">
         <TextField label="Título opcional" value={form.title} onChange={(value) => onFormChange({ title: value })} />
-        <NumberField label="Orden" value={form.sortOrder} onChange={(value) => onFormChange({ sortOrder: value ?? 0 })} />
       </div>
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
         <SwitchField label="Visible" checked={form.isVisible} onChange={(value) => onFormChange({ isVisible: value })} />
@@ -634,7 +814,26 @@ function MediaUploadPanel({
           <p className="py-5 text-sm text-neutral-500">Todavía no hay archivos.</p>
         ) : (
           media.map((item) => (
-            <article key={item.id} className="grid gap-4 py-5 sm:grid-cols-[6rem_1fr_auto] sm:items-center">
+            <article
+              key={item.id}
+              className={`grid gap-4 py-5 transition sm:grid-cols-[2.5rem_6rem_1fr_auto] sm:items-center ${
+                draggedMediaId === item.id ? "bg-neutral-50" : ""
+              }`}
+              onDragOver={onMediaDragOver}
+              onDrop={() => onMediaDrop(item.id)}
+            >
+              <button
+                type="button"
+                className="flex h-10 w-10 cursor-grab items-center justify-center text-neutral-400 transition hover:text-neutral-950 active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label={`Reordenar ${item.title ?? item.id}`}
+                draggable={!isSavingOrder}
+                disabled={isSavingOrder}
+                onClick={onMediaActionClick}
+                onDragStart={(event) => onMediaDragStart(event, item.id)}
+                onDragEnd={onMediaDragEnd}
+              >
+                <DragHandleIcon />
+              </button>
               <MediaPreview media={item} />
               <div>
                 <h4 className="font-title text-lg font-medium">{item.title ?? item.id}</h4>
@@ -642,13 +841,25 @@ function MediaUploadPanel({
                   {getMediaRoleLabel(item.role)} · {item.mimeType ?? item.assetType} · Orden {item.sortOrder}
                 </p>
               </div>
-              <button
-                type="button"
-                className="cursor-pointer border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:border-neutral-950"
-                onClick={() => onToggleVisibility(item)}
-              >
-                {item.isVisible ? "Ocultar" : "Mostrar"}
-              </button>
+              <div className="flex flex-wrap justify-end gap-2" onClick={onMediaActionClick}>
+                <button
+                  type="button"
+                  className="cursor-pointer border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:border-neutral-950 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={deletingMediaId === item.id}
+                  onClick={() => onToggleVisibility(item)}
+                >
+                  {item.isVisible ? "Ocultar" : "Mostrar"}
+                </button>
+                <button
+                  type="button"
+                  className="cursor-pointer border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:border-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Eliminar"
+                  disabled={deletingMediaId === item.id}
+                  onClick={() => onDeleteMedia(item)}
+                >
+                  {deletingMediaId === item.id ? "Eliminando..." : "Eliminar"}
+                </button>
+              </div>
             </article>
           ))
         )}
@@ -676,6 +887,19 @@ function MediaPreview({ media }: { media: ProjectMedia }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={media.url} alt={media.title ?? media.id} className="h-24 w-full object-cover" />
     </div>
+  );
+}
+
+function DragHandleIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="3"
+      />
+    </svg>
   );
 }
 

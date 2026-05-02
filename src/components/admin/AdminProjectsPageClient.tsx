@@ -75,7 +75,7 @@ export function AdminProjectsPageClient() {
     const previousProjects = projects;
     const reorderedProjects = moveProject(projects, fromIndex, toIndex).map((project, index) => ({
       ...project,
-      sortOrder: (index + 1) * 10,
+      sortOrder: index + 1,
     }));
 
     setProjects(reorderedProjects);

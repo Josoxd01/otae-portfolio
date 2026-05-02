@@ -1,5 +1,6 @@
 import {
   addDoc,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -128,6 +129,25 @@ export async function updateAdminProjectMedia(
   media: Partial<ProjectMedia>,
 ) {
   await updateDoc(doc(db, "projects", projectId, "media", mediaId), media);
+}
+
+export async function updateAdminProjectMediaSortOrders(
+  projectId: string,
+  mediaItems: Array<Pick<ProjectMedia, "id" | "sortOrder">>,
+) {
+  const batch = writeBatch(db);
+
+  mediaItems.forEach((media) => {
+    batch.update(doc(db, "projects", projectId, "media", media.id), {
+      sortOrder: media.sortOrder,
+    });
+  });
+
+  await batch.commit();
+}
+
+export async function deleteAdminProjectMedia(projectId: string, mediaId: string) {
+  await deleteDoc(doc(db, "projects", projectId, "media", mediaId));
 }
 
 export async function setAdminProjectMediaVisible(
