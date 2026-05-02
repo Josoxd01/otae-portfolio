@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
-import { getAdminCategory, saveAdminCategory } from "@/lib/admin/portfolio-admin";
+import {
+  getAdminCategories,
+  getAdminCategory,
+  saveAdminCategory,
+} from "@/lib/admin/portfolio-admin";
 import { uploadCategoryCoverMedia } from "@/lib/storage";
 import type { ProjectCategory } from "@/types/portfolio";
 
@@ -26,15 +30,19 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
     let isMounted = true;
 
     async function loadCategory() {
-      if (!categoryId) {
-        return;
-      }
-
       try {
-        const firestoreCategory = await getAdminCategory(categoryId);
+        const [categories, firestoreCategory] = await Promise.all([
+          getAdminCategories(),
+          categoryId ? getAdminCategory(categoryId) : Promise.resolve(undefined),
+        ]);
 
         if (isMounted && firestoreCategory) {
           setCategory(firestoreCategory);
+        } else if (isMounted && !categoryId) {
+          setCategory((current) => ({
+            ...current,
+            sortOrder: getNextCategorySortOrder(categories),
+          }));
         }
       } catch (error) {
         console.warn("Could not load category.", error);
@@ -150,7 +158,9 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
         ) : (
           <section className="mt-10 grid gap-6 border border-neutral-200 bg-white p-7 lg:grid-cols-2">
             <TextField label="Nombre" value={category.name} onChange={handleNameChange} />
-            <NumberField label="Orden" value={category.sortOrder} onChange={(value) => updateField("sortOrder", value ?? 0)} />
+            <p className="border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm leading-7 text-neutral-500">
+              El orden se gestiona desde el listado de categorías.
+            </p>
             <label className="block lg:col-span-2">
               <FieldLabel>Descripción</FieldLabel>
               <textarea
@@ -208,9 +218,18 @@ function createEmptyCategory(): ProjectCategory {
     name: "",
     slug: "",
     categoryGroup: "portfolio_area",
-    sortOrder: 0,
+    sortOrder: 1,
     isActive: true,
   };
+}
+
+function getNextCategorySortOrder(categories: ProjectCategory[]) {
+  const maxSortOrder = categories.reduce(
+    (maxOrder, category) => Math.max(maxOrder, category.sortOrder ?? 0),
+    0,
+  );
+
+  return maxSortOrder > 0 ? maxSortOrder + 1 : 1;
 }
 
 function normalizeCategory(category: ProjectCategory, keepExistingSlug: boolean): ProjectCategory {
@@ -247,15 +266,6 @@ function TextField({ label, onChange, value }: { label: string; onChange: (value
     <label className="block">
       <FieldLabel>{label}</FieldLabel>
       <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950" value={value} onChange={(event) => onChange(event.target.value)} />
-    </label>
-  );
-}
-
-function NumberField({ label, onChange, value }: { label: string; onChange: (value?: number) => void; value?: number }) {
-  return (
-    <label className="block">
-      <FieldLabel>{label}</FieldLabel>
-      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950" type="number" value={value ?? ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)} />
     </label>
   );
 }

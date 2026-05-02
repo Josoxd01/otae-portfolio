@@ -191,6 +191,22 @@ export async function saveAdminCategory(category: ProjectCategory) {
   );
 }
 
+export async function updateAdminCategorySortOrders(
+  categories: Array<Pick<ProjectCategory, "id" | "sortOrder">>,
+) {
+  const batch = writeBatch(db);
+  const updatedAt = new Date().toISOString();
+
+  categories.forEach((category) => {
+    batch.update(doc(db, "project_categories", category.id), {
+      sortOrder: category.sortOrder,
+      updatedAt,
+    });
+  });
+
+  await batch.commit();
+}
+
 export async function setAdminCategoryActive(categoryId: string, isActive: boolean) {
   await updateDoc(doc(db, "project_categories", categoryId), {
     isActive,
