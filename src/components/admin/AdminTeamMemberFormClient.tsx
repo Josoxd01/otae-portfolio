@@ -10,27 +10,31 @@ import { uploadTeamMemberPhoto } from "@/lib/storage";
 import type { TeamMember } from "@/types/portfolio";
 
 interface AdminTeamMemberFormClientProps {
-  memberId: string;
+  memberId?: string;
 }
 
 export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClientProps) {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(Boolean(memberId));
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [member, setMember] = useState<TeamMember | null>(null);
+  const [member, setMember] = useState<TeamMember>(() => createEmptyMember());
   const [uploadMessage, setUploadMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadMember() {
+      if (!memberId) {
+        return;
+      }
+
       try {
         const data = await getAdminTeamMember(memberId);
 
-        if (isMounted) {
-          setMember(data ?? null);
+        if (isMounted && data) {
+          setMember(data);
         }
       } catch (error) {
         console.warn("Could not load team member.", error);
@@ -51,16 +55,12 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!member) {
-      return;
-    }
-
     setErrorMessage("");
     setIsSaving(true);
 
     try {
-      await saveAdminTeamMember(member);
+      const normalizedMember = normalizeMember(member, Boolean(memberId));
+      await saveAdminTeamMember(normalizedMember);
       router.push("/admin/team");
     } catch (error) {
       console.warn("Could not save team member.", error);
@@ -73,8 +73,10 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
   async function handlePhotoUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
+    const currentMemberId = member.id || slugify(member.name);
 
-    if (!file || !member) {
+    if (!file || !currentMemberId) {
+      setErrorMessage("Escribe el nombre del miembro antes de subir la foto.");
       return;
     }
 
@@ -83,17 +85,21 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
     setIsUploading(true);
 
     try {
-      const uploaded = await uploadTeamMemberPhoto(member.id, file);
-      const updatedMember: TeamMember = {
-        ...member,
-        photoMedia: {
-          assetType: "image",
-          altText: member.photoMedia?.altText || member.name,
-          storagePath: uploaded.storagePath,
-          title: member.photoMedia?.title || `Foto de ${member.name}`,
-          url: uploaded.url,
+      const uploaded = await uploadTeamMemberPhoto(currentMemberId, file);
+      const updatedMember = normalizeMember(
+        {
+          ...member,
+          id: currentMemberId,
+          photoMedia: {
+            assetType: "image",
+            altText: member.name,
+            storagePath: uploaded.storagePath,
+            title: `Foto de ${member.name}`,
+            url: uploaded.url,
+          },
         },
-      };
+        Boolean(memberId),
+      );
 
       await saveAdminTeamMember(updatedMember);
       setMember(updatedMember);
@@ -105,18 +111,20 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
     }
   }
 
-  function updatePhotoAltText(value: string) {
-    setMember((current) =>
-      current
-        ? {
-            ...current,
-            photoMedia: current.photoMedia
-              ? { ...current.photoMedia, altText: value }
-              : { assetType: "image", altText: value, url: "" },
-          }
-        : current,
-    );
+  function handleNameChange(value: string) {
+    setMember((current) => ({
+      ...current,
+      name: value,
+      id: memberId ? current.id : slugify(value),
+    }));
   }
+
+  function updateField<K extends keyof TeamMember>(field: K, value: TeamMember[K]) {
+    setMember((current) => ({ ...current, [field]: value }));
+  }
+
+  const title = memberId ? "Editar miembro" : "Nuevo miembro";
+  const canUploadPhoto = Boolean(member.id || member.name);
 
   return (
     <AdminShell>
@@ -125,18 +133,18 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
           <div>
             <p className="section-label">Admin / Equipo</p>
             <h1 className="mt-7 font-title text-4xl font-medium leading-tight">
-              {member?.name ?? "Miembro del equipo"}
+              {title}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-neutral-600">
-              Sube o reemplaza la foto pública del miembro. Solo se aceptan JPG, PNG y WebP.
+              Edita el perfil público, enlaces profesionales, orden y fotografía del miembro.
             </p>
           </div>
           <button
             type="submit"
             className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isSaving || isLoading || !member}
+            disabled={isSaving || isLoading || !member.name}
           >
-            {isSaving ? "Guardando..." : "Guardar cambios"}
+            {isSaving ? "Guardando..." : "Guardar miembro"}
           </button>
         </div>
 
@@ -154,62 +162,190 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
 
         {isLoading ? (
           <p className="mt-10 text-sm text-neutral-500">Cargando miembro...</p>
-        ) : member ? (
-          <section className="mt-10 grid gap-8 border border-neutral-200 bg-white p-7 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
+        ) : (
+          <div className="mt-10 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+            <section className="border border-neutral-200 bg-white p-7">
+              <p className="section-label">Foto</p>
+              <h2 className="mt-4 font-title text-3xl font-medium">Imagen pública</h2>
+
               {member.photoMedia?.url ? (
-                <div className="overflow-hidden border border-neutral-200 bg-neutral-100">
+                <div className="mt-6 overflow-hidden border border-neutral-200 bg-neutral-100">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={member.photoMedia.url}
-                    alt={member.photoMedia.altText ?? member.name}
+                    alt={member.name}
                     className="h-[520px] w-full object-cover"
                   />
                 </div>
               ) : (
-                <div className="flex h-[520px] items-center justify-center border border-neutral-200 bg-neutral-100 text-sm text-neutral-400">
+                <div className="mt-6 flex h-[520px] items-center justify-center border border-neutral-200 bg-neutral-100 text-sm text-neutral-400">
                   Sin foto
                 </div>
               )}
-            </div>
 
-            <div className="space-y-6">
-              <div>
-                <p className="section-label">Perfil</p>
-                <h2 className="mt-4 font-title text-3xl font-medium">{member.name}</h2>
-                <p className="mt-3 text-sm text-neutral-500">{member.role ?? "Sin cargo"}</p>
-              </div>
-
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">
-                  Alt text de la foto
-                </span>
-                <input
-                  className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none"
-                  value={member.photoMedia?.altText ?? ""}
-                  onChange={(event) => updatePhotoAltText(event.target.value)}
-                />
-              </label>
-
-              <label className="inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:border-neutral-300">
+              <label className="mt-5 inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:border-neutral-300">
                 {isUploading ? "Subiendo..." : "Subir/reemplazar foto"}
                 <input
                   className="sr-only"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  disabled={isUploading}
+                  disabled={isUploading || !canUploadPhoto}
                   onChange={handlePhotoUpload}
                 />
               </label>
-              <p className="text-sm leading-7 text-neutral-500">
-                Ruta: team-media/{member.id}/photo/. Tamaño máximo: 5 MB.
+              <p className="mt-3 text-sm leading-7 text-neutral-500">
+                JPG, PNG o WebP. Máximo 5 MB. Para miembros nuevos, escribe primero el nombre.
               </p>
-            </div>
-          </section>
-        ) : (
-          <p className="mt-10 text-sm text-neutral-500">No se encontró el miembro solicitado.</p>
+            </section>
+
+            <section className="border border-neutral-200 bg-white p-7">
+              <p className="section-label">Perfil</p>
+              <h2 className="mt-4 font-title text-3xl font-medium">Datos del miembro</h2>
+              <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                <TextField label="Nombre" value={member.name} onChange={handleNameChange} required />
+                <TextField
+                  label="Rol / cargo"
+                  value={member.role ?? ""}
+                  onChange={(value) => updateField("role", value)}
+                />
+                <TextField
+                  label="Email"
+                  type="email"
+                  value={member.email ?? ""}
+                  onChange={(value) => updateField("email", value)}
+                />
+                <NumberField
+                  label="Orden"
+                  value={member.sortOrder}
+                  onChange={(value) => updateField("sortOrder", value ?? 0)}
+                />
+                <TextField
+                  label="Instagram"
+                  value={member.instagramUrl ?? ""}
+                  onChange={(value) => updateField("instagramUrl", value)}
+                />
+                <TextField
+                  label="LinkedIn"
+                  value={member.linkedinUrl ?? ""}
+                  onChange={(value) => updateField("linkedinUrl", value)}
+                />
+                <label className="block lg:col-span-2">
+                  <FieldLabel>Biografía breve</FieldLabel>
+                  <textarea
+                    className="mt-3 w-full resize-y border border-neutral-300 px-4 py-3 text-sm leading-7 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+                    rows={5}
+                    value={member.bio ?? ""}
+                    onChange={(event) => updateField("bio", event.target.value)}
+                  />
+                </label>
+                <SwitchField
+                  checked={member.isActive}
+                  label="Activo"
+                  onChange={(value) => updateField("isActive", value)}
+                />
+              </div>
+            </section>
+          </div>
         )}
       </form>
     </AdminShell>
   );
+}
+
+function createEmptyMember(): TeamMember {
+  return {
+    id: "",
+    name: "",
+    sortOrder: 0,
+    isActive: true,
+  };
+}
+
+function normalizeMember(member: TeamMember, keepExistingId: boolean): TeamMember {
+  const id = keepExistingId && member.id ? member.id : member.id || slugify(member.name);
+
+  return {
+    ...member,
+    id,
+    photoMedia: member.photoMedia?.url
+      ? {
+          assetType: "image",
+          altText: member.name,
+          storagePath: member.photoMedia.storagePath,
+          title: member.photoMedia.title || `Foto de ${member.name}`,
+          url: member.photoMedia.url,
+        }
+      : undefined,
+  };
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function TextField({
+  label,
+  onChange,
+  required,
+  type = "text",
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  type?: string;
+  value: string;
+}) {
+  return (
+    <label className="block">
+      <FieldLabel>{label}</FieldLabel>
+      <input
+        className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+        required={required}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
+function NumberField({ label, onChange, value }: { label: string; onChange: (value?: number) => void; value?: number }) {
+  return (
+    <label className="block">
+      <FieldLabel>{label}</FieldLabel>
+      <input
+        className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+        type="number"
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)}
+      />
+    </label>
+  );
+}
+
+function SwitchField({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      className="flex min-h-14 cursor-pointer items-center justify-between gap-4 border border-neutral-300 px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="font-medium text-neutral-800">{label}</span>
+      <span className={`relative h-6 w-11 border transition ${checked ? "border-neutral-950 bg-neutral-950" : "border-neutral-300 bg-neutral-100"}`}>
+        <span className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 bg-white transition ${checked ? "left-6" : "left-1"}`} />
+      </span>
+    </button>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">{children}</span>;
 }

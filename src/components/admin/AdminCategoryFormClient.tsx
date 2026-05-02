@@ -7,9 +7,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { getAdminCategory, saveAdminCategory } from "@/lib/admin/portfolio-admin";
 import { uploadCategoryCoverMedia } from "@/lib/storage";
-import type { CategoryGroup, ProjectCategory } from "@/types/portfolio";
-
-const categoryGroups: CategoryGroup[] = ["portfolio_area", "typology", "content_area"];
+import type { ProjectCategory } from "@/types/portfolio";
 
 interface AdminCategoryFormClientProps {
   categoryId?: string;
@@ -61,7 +59,7 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
     setIsSaving(true);
 
     try {
-      await saveAdminCategory(normalizeCategory(category));
+      await saveAdminCategory(normalizeCategory(category, Boolean(categoryId)));
       router.push("/admin/categories");
     } catch (error) {
       console.warn("Could not save category.", error);
@@ -69,6 +67,14 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleNameChange(value: string) {
+    setCategory((current) => ({
+      ...current,
+      name: value,
+      slug: categoryId && current.slug ? current.slug : slugify(value),
+    }));
   }
 
   function updateField<K extends keyof ProjectCategory>(field: K, value: ProjectCategory[K]) {
@@ -90,16 +96,19 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
 
     try {
       const uploaded = await uploadCategoryCoverMedia(currentCategoryId, file);
-      const updatedCategory = normalizeCategory({
-        ...category,
-        id: currentCategoryId,
-        coverMedia: {
-          assetType: "image",
-          altText: category.coverMedia?.altText || category.name,
-          storagePath: uploaded.storagePath,
-          url: uploaded.url,
+      const updatedCategory = normalizeCategory(
+        {
+          ...category,
+          id: currentCategoryId,
+          coverMedia: {
+            assetType: "image",
+            altText: category.name,
+            storagePath: uploaded.storagePath,
+            url: uploaded.url,
+          },
         },
-      });
+        Boolean(categoryId),
+      );
 
       await saveAdminCategory(updatedCategory);
       setCategory(updatedCategory);
@@ -140,55 +149,21 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
           <p className="mt-10 text-sm text-neutral-500">Cargando formulario...</p>
         ) : (
           <section className="mt-10 grid gap-6 border border-neutral-200 bg-white p-7 lg:grid-cols-2">
-            <TextField label="Nombre" value={category.name} onChange={(value) => updateField("name", value)} />
-            <TextField label="Slug" value={category.slug} onChange={(value) => updateField("slug", slugify(value))} />
-            <label className="block">
-              <FieldLabel>Grupo</FieldLabel>
-              <select
-                className="mt-3 w-full border border-neutral-300 bg-white px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none"
-                value={category.categoryGroup}
-                onChange={(event) => updateField("categoryGroup", event.target.value as CategoryGroup)}
-              >
-                {categoryGroups.map((group) => (
-                  <option key={group} value={group}>
-                    {group}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <TextField label="Nombre" value={category.name} onChange={handleNameChange} />
             <NumberField label="Orden" value={category.sortOrder} onChange={(value) => updateField("sortOrder", value ?? 0)} />
             <label className="block lg:col-span-2">
               <FieldLabel>Descripción</FieldLabel>
               <textarea
-                className="mt-3 w-full resize-y border border-neutral-300 px-4 py-3 text-sm leading-7 focus:border-neutral-950 focus:outline-none"
+                className="mt-3 w-full resize-y border border-neutral-300 px-4 py-3 text-sm leading-7 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
                 rows={5}
                 value={category.description ?? ""}
                 onChange={(event) => updateField("description", event.target.value)}
               />
             </label>
-            <TextField
-              label="Cover URL"
-              value={category.coverMedia?.url ?? ""}
-              onChange={(value) =>
-                updateField("coverMedia", {
-                  assetType: "image",
-                  url: value,
-                  storagePath: category.coverMedia?.storagePath,
-                  altText: category.coverMedia?.altText,
-                })
-              }
-            />
-            <TextField
-              label="Cover alt text"
-              value={category.coverMedia?.altText ?? ""}
-              onChange={(value) =>
-                updateField("coverMedia", {
-                  assetType: "image",
-                  url: category.coverMedia?.url ?? "",
-                  storagePath: category.coverMedia?.storagePath,
-                  altText: value,
-                })
-              }
+            <SwitchField
+              checked={category.isActive}
+              label="Activa"
+              onChange={(value) => updateField("isActive", value)}
             />
             <div className="lg:col-span-2">
               {category.coverMedia?.url ? (
@@ -196,7 +171,7 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={category.coverMedia.url}
-                    alt={category.coverMedia.altText ?? category.name}
+                    alt={category.name}
                     className="h-72 w-full object-cover"
                   />
                 </div>
@@ -216,18 +191,10 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
                 />
               </label>
               <p className="mt-3 text-sm text-neutral-500">
-                JPG, PNG o WebP. Máximo 5 MB. Si es una categoría nueva, escribe primero nombre o slug.
+                JPG, PNG o WebP. Máximo 5 MB. Si es una categoría nueva, escribe primero el nombre.
               </p>
               {uploadMessage ? <p className="mt-3 text-sm text-neutral-500">{uploadMessage}</p> : null}
             </div>
-            <label className="flex items-center gap-3 text-sm font-medium text-neutral-700">
-              <input
-                type="checkbox"
-                checked={category.isActive}
-                onChange={(event) => updateField("isActive", event.target.checked)}
-              />
-              Activa
-            </label>
           </section>
         )}
       </form>
@@ -246,11 +213,12 @@ function createEmptyCategory(): ProjectCategory {
   };
 }
 
-function normalizeCategory(category: ProjectCategory): ProjectCategory {
-  const slug = category.slug || slugify(category.name);
+function normalizeCategory(category: ProjectCategory, keepExistingSlug: boolean): ProjectCategory {
+  const slug = keepExistingSlug && category.slug ? category.slug : slugify(category.name);
 
   return {
     ...category,
+    categoryGroup: "portfolio_area",
     id: category.id || slug,
     slug,
     description: category.description || undefined,
@@ -259,7 +227,7 @@ function normalizeCategory(category: ProjectCategory): ProjectCategory {
           assetType: "image",
           url: category.coverMedia.url,
           storagePath: category.coverMedia.storagePath,
-          altText: category.coverMedia.altText || category.name,
+          altText: category.name,
         }
       : undefined,
   };
@@ -278,7 +246,7 @@ function TextField({ label, onChange, value }: { label: string; onChange: (value
   return (
     <label className="block">
       <FieldLabel>{label}</FieldLabel>
-      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none" value={value} onChange={(event) => onChange(event.target.value)} />
+      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950" value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }
@@ -287,8 +255,25 @@ function NumberField({ label, onChange, value }: { label: string; onChange: (val
   return (
     <label className="block">
       <FieldLabel>{label}</FieldLabel>
-      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none" type="number" value={value ?? ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)} />
+      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950" type="number" value={value ?? ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)} />
     </label>
+  );
+}
+
+function SwitchField({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      className="flex min-h-14 cursor-pointer items-center justify-between gap-4 border border-neutral-300 px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="font-medium text-neutral-800">{label}</span>
+      <span className={`relative h-6 w-11 border transition ${checked ? "border-neutral-950 bg-neutral-950" : "border-neutral-300 bg-neutral-100"}`}>
+        <span className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 bg-white transition ${checked ? "left-6" : "left-1"}`} />
+      </span>
+    </button>
   );
 }
 

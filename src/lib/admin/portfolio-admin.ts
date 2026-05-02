@@ -166,10 +166,10 @@ export async function getAdminStudioProfile() {
 export async function saveAdminStudioProfile(studioProfile: StudioProfile) {
   await setDoc(
     doc(db, "studio_profile", "main"),
-    {
+    removeUndefinedValues({
       ...studioProfile,
       updatedAt: new Date().toISOString(),
-    },
+    }),
     { merge: true },
   );
 }
@@ -193,5 +193,13 @@ export async function getAdminTeamMember(memberId: string) {
 }
 
 export async function saveAdminTeamMember(member: TeamMember) {
-  await setDoc(doc(db, "team_members", member.id), member, { merge: true });
+  await setDoc(
+    doc(db, "team_members", member.id),
+    removeUndefinedValues(member),
+    { merge: true },
+  );
+}
+
+export async function setAdminTeamMemberActive(memberId: string, isActive: boolean) {
+  await updateDoc(doc(db, "team_members", memberId), { isActive });
 }
