@@ -44,7 +44,7 @@ export function AdminLoginPageClient() {
       <section className="w-full max-w-md border border-neutral-200 bg-white px-7 py-9 sm:px-9">
         <Link
           href="/"
-          className="font-title text-sm font-medium tracking-[0.42em] text-neutral-950"
+          className="cursor-pointer font-title text-sm font-medium tracking-[0.42em] text-neutral-950"
         >
           OTAE
         </Link>
@@ -97,7 +97,7 @@ export function AdminLoginPageClient() {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full cursor-pointer items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isLoading}
           >
             {isLoading ? "Ingresando..." : "Ingresar"}

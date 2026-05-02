@@ -62,7 +62,7 @@ export function AdminProjectsPageClient() {
         </div>
         <Link
           href="/admin/projects/new"
-          className="inline-flex items-center justify-center bg-neutral-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
+          className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
         >
           Nuevo proyecto
         </Link>
@@ -181,7 +181,7 @@ function IconButton({
     <span className="group relative">
       <button
         type="button"
-        className="flex h-10 w-10 items-center justify-center border border-neutral-200 text-neutral-500 transition hover:border-neutral-950 hover:text-neutral-950"
+        className="flex h-10 w-10 cursor-pointer items-center justify-center border border-neutral-200 text-neutral-500 transition hover:border-neutral-950 hover:text-neutral-950"
         aria-label={label}
         onClick={onClick}
       >
@@ -208,7 +208,7 @@ function IconLink({
       <Link
         href={href}
         target={target}
-        className="flex h-10 w-10 items-center justify-center border border-neutral-200 text-neutral-500 transition hover:border-neutral-950 hover:text-neutral-950"
+        className="flex h-10 w-10 cursor-pointer items-center justify-center border border-neutral-200 text-neutral-500 transition hover:border-neutral-950 hover:text-neutral-950"
         aria-label={label}
       >
         {icon}

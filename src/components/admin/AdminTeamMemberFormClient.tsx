@@ -133,7 +133,7 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
           </div>
           <button
             type="submit"
-            className="inline-flex items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSaving || isLoading || !member}
           >
             {isSaving ? "Guardando..." : "Guardar cambios"}
@@ -191,7 +191,7 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
                 />
               </label>
 
-              <label className="inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950">
+              <label className="inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:border-neutral-300">
                 {isUploading ? "Subiendo..." : "Subir/reemplazar foto"}
                 <input
                   className="sr-only"

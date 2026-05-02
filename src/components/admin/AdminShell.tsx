@@ -59,10 +59,10 @@ export function AdminShell({ children }: AdminShellProps) {
       <header className="border-b border-neutral-200 bg-white px-6 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center justify-between gap-6">
-            <Link href="/admin" className="font-title text-sm font-medium tracking-[0.42em]">
+            <Link href="/admin" className="cursor-pointer font-title text-sm font-medium tracking-[0.42em]">
               OTAE
             </Link>
-            <Link href="/" className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400 transition hover:text-neutral-950">
+            <Link href="/" className="cursor-pointer text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400 transition hover:text-neutral-950">
               Ver sitio
             </Link>
           </div>
@@ -75,7 +75,7 @@ export function AdminShell({ children }: AdminShellProps) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`border px-4 py-2 transition ${
+                  className={`cursor-pointer border px-4 py-2 transition ${
                     isActive
                       ? "border-neutral-950 bg-neutral-950 text-white"
                       : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-950 hover:text-neutral-950"
@@ -91,7 +91,7 @@ export function AdminShell({ children }: AdminShellProps) {
             {email ? <span className="text-xs text-neutral-500">{email}</span> : null}
             <button
               type="button"
-              className="border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-950 transition hover:border-neutral-950 disabled:cursor-not-allowed disabled:opacity-50"
+              className="cursor-pointer border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-950 transition hover:border-neutral-950 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSigningOut}
               onClick={handleSignOut}
             >

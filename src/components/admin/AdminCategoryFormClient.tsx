@@ -123,7 +123,7 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
           </div>
           <button
             type="submit"
-            className="inline-flex items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSaving || isLoading}
           >
             {isSaving ? "Guardando..." : "Guardar categoría"}
@@ -205,7 +205,7 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
                   Sin imagen de categoría
                 </div>
               )}
-              <label className="mt-5 inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950">
+              <label className="mt-5 inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:border-neutral-300">
                 {isUploadingCover ? "Subiendo..." : "Subir/reemplazar imagen"}
                 <input
                   className="sr-only"

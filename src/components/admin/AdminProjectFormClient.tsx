@@ -31,24 +31,23 @@ const projectStageOptions: Array<{ label: string; value: ProjectStage }> = [
   { label: "Completado", value: "completed" },
 ];
 
-const mediaRoleOptions: Array<{ label: string; value: ProjectMediaRole }> = [
-  { label: "Galería", value: "gallery" },
-  { label: "Plano", value: "plan" },
-  { label: "Render", value: "render" },
-  { label: "Construcción", value: "construction" },
-  { label: "Detalle", value: "detail" },
-  { label: "Ficha técnica", value: "technical_sheet" },
-];
+const mediaRoleLabels: Record<string, string> = {
+  gallery: "Galería",
+  plan: "Plano",
+  render: "Render",
+  construction: "Construcción",
+  detail: "Detalle",
+  technical_sheet: "Ficha técnica",
+};
+
+type EditableMediaRole = Extract<ProjectMediaRole, "gallery" | "plan">;
 
 interface AdminProjectFormClientProps {
   projectId?: string;
 }
 
 interface MediaFormState {
-  altText: string;
-  description: string;
   isVisible: boolean;
-  role: ProjectMediaRole;
   sortOrder: number;
   title: string;
 }
@@ -64,10 +63,13 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
   const [isLoading, setIsLoading] = useState(Boolean(projectId));
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [mediaErrorMessage, setMediaErrorMessage] = useState("");
-  const [mediaForm, setMediaForm] = useState<MediaFormState>(() => createEmptyMediaForm());
+  const [mediaForms, setMediaForms] = useState<Record<EditableMediaRole, MediaFormState>>(() => ({
+    gallery: createEmptyMediaForm(),
+    plan: createEmptyMediaForm(),
+  }));
   const [projectMedia, setProjectMedia] = useState<ProjectMedia[]>([]);
+  const [uploadingRole, setUploadingRole] = useState<EditableMediaRole | null>(null);
 
   const title = projectId ? "Editar proyecto" : "Nuevo proyecto";
   const activeCategories = useMemo(
@@ -82,6 +84,8 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
   const hasDuplicateSortOrder =
     form.sortOrder !== undefined &&
     allProjects.some((project) => project.id !== form.id && project.sortOrder === form.sortOrder);
+  const galleryMedia = projectMedia.filter((media) => media.role === "gallery");
+  const planMedia = projectMedia.filter((media) => media.role === "plan");
 
   useEffect(() => {
     let isMounted = true;
@@ -136,7 +140,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
     setIsSaving(true);
 
     try {
-      const normalizedProject = normalizeProject(form);
+      const normalizedProject = normalizeProject(form, Boolean(projectId));
       await saveAdminProject(normalizedProject);
       router.push("/admin/projects");
     } catch (error) {
@@ -161,16 +165,19 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
 
     try {
       const uploaded = await uploadProjectCoverMedia(currentProjectId, file);
-      const updatedProject = normalizeProject({
-        ...form,
-        id: currentProjectId,
-        coverMedia: {
-          assetType: "image",
-          altText: form.coverMedia?.altText || form.title,
-          storagePath: uploaded.storagePath,
-          url: uploaded.url,
+      const updatedProject = normalizeProject(
+        {
+          ...form,
+          id: currentProjectId,
+          coverMedia: {
+            assetType: "image",
+            altText: form.coverMedia?.altText || form.title,
+            storagePath: uploaded.storagePath,
+            url: uploaded.url,
+          },
         },
-      });
+        Boolean(projectId),
+      );
 
       await saveAdminProject(updatedProject);
       setForm(updatedProject);
@@ -182,7 +189,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
     }
   }
 
-  async function handleMediaUpload(event: ChangeEvent<HTMLInputElement>) {
+  async function handleMediaUpload(event: ChangeEvent<HTMLInputElement>, role: EditableMediaRole) {
     const file = event.target.files?.[0];
     event.target.value = "";
 
@@ -190,29 +197,29 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
       return;
     }
 
+    const mediaForm = mediaForms[role];
     setMediaErrorMessage("");
-    setIsUploadingMedia(true);
+    setUploadingRole(role);
 
     try {
-      const uploaded = await uploadProjectMedia(currentProjectId, file, mediaForm.role);
+      const uploaded = await uploadProjectMedia(currentProjectId, file, role);
       await createAdminProjectMedia(currentProjectId, {
         url: uploaded.url,
         storagePath: uploaded.storagePath,
         assetType: uploaded.assetType,
         mimeType: uploaded.mimeType,
-        role: mediaForm.role,
+        role,
         title: mediaForm.title || file.name,
-        description: mediaForm.description || undefined,
-        altText: mediaForm.altText || mediaForm.title || file.name,
+        altText: mediaForm.title || file.name,
         sortOrder: mediaForm.sortOrder,
         isVisible: mediaForm.isVisible,
       });
-      setMediaForm(createEmptyMediaForm());
+      updateMediaForm(role, createEmptyMediaForm());
       await reloadProjectMedia(currentProjectId);
     } catch (error) {
       setMediaErrorMessage(error instanceof Error ? error.message : "No se pudo subir la media.");
     } finally {
-      setIsUploadingMedia(false);
+      setUploadingRole(null);
     }
   }
 
@@ -225,8 +232,27 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
     await reloadProjectMedia(currentProjectId);
   }
 
+  function handleTitleChange(value: string) {
+    setForm((current) => ({
+      ...current,
+      title: value,
+      slug: projectId ? current.slug : slugify(value),
+    }));
+  }
+
   function updateField<K extends keyof Project>(field: K, value: Project[K]) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateMediaForm(role: EditableMediaRole, nextValue: MediaFormState) {
+    setMediaForms((current) => ({ ...current, [role]: nextValue }));
+  }
+
+  function patchMediaForm(role: EditableMediaRole, patch: Partial<MediaFormState>) {
+    setMediaForms((current) => ({
+      ...current,
+      [role]: { ...current[role], ...patch },
+    }));
   }
 
   function toggleCategory(categoryId: string) {
@@ -256,7 +282,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
           </div>
           <button
             type="submit"
-            className="inline-flex items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSaving || isLoading}
           >
             {isSaving ? "Guardando..." : "Guardar proyecto"}
@@ -280,9 +306,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                 description="Define la información editorial básica que se mostrará en el portafolio público."
               />
               <div className="mt-8 grid gap-6 lg:grid-cols-2">
-                <TextField label="Título" value={form.title} onChange={(value) => updateField("title", value)} />
-                <TextField label="Slug" value={form.slug} onChange={(value) => updateField("slug", slugify(value))} />
-                <TextField label="Subtítulo" value={form.subtitle ?? ""} onChange={(value) => updateField("subtitle", value)} />
+                <TextField label="Título" value={form.title} onChange={handleTitleChange} />
                 <TextField label="Ubicación" value={form.location ?? ""} onChange={(value) => updateField("location", value)} />
                 <TextArea label="Resumen" rows={4} value={form.summary} onChange={(value) => updateField("summary", value)} />
                 <TextArea label="Descripción" rows={4} value={form.description} onChange={(value) => updateField("description", value)} />
@@ -293,8 +317,8 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
 
             <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
               <section className="border border-neutral-200 bg-white p-7">
-                <SectionHeading label="Publicación" title="Estado y orden" />
-                <div className="mt-8 space-y-5">
+                <SectionHeading label="Estado del proyecto" title="Publicación y orden" />
+                <div className="mt-8 space-y-6">
                   <SelectField
                     label="Etapa"
                     value={form.projectStage ?? "design"}
@@ -310,8 +334,18 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                       Otro proyecto ya usa este orden. Puedes guardarlo, pero revisa la secuencia editorial.
                     </p>
                   ) : null}
-                  <CheckboxField label="Proyecto destacado" checked={form.isFeatured} onChange={(value) => updateField("isFeatured", value)} />
-                  <CheckboxField label="Activo" checked={form.isActive} onChange={(value) => updateField("isActive", value)} />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <StarToggle
+                      checked={form.isFeatured}
+                      label="Proyecto destacado"
+                      onChange={(value) => updateField("isFeatured", value)}
+                    />
+                    <SwitchField
+                      checked={form.isActive}
+                      label="Proyecto activo"
+                      onChange={(value) => updateField("isActive", value)}
+                    />
+                  </div>
                 </div>
               </section>
 
@@ -352,7 +386,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={form.coverMedia.url}
-                        alt={form.coverMedia.altText ?? form.title}
+                        alt={form.title}
                         className="h-72 w-full object-cover"
                       />
                     </div>
@@ -361,31 +395,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                       Sin portada
                     </div>
                   )}
-                  <TextField
-                    label="Alt text"
-                    value={form.coverMedia?.altText ?? ""}
-                    onChange={(value) =>
-                      updateField("coverMedia", {
-                        assetType: "image",
-                        storagePath: form.coverMedia?.storagePath,
-                        url: form.coverMedia?.url ?? "",
-                        altText: value,
-                      })
-                    }
-                  />
-                  <TextField
-                    label="URL de imagen"
-                    value={form.coverMedia?.url ?? ""}
-                    onChange={(value) =>
-                      updateField("coverMedia", {
-                        assetType: "image",
-                        storagePath: form.coverMedia?.storagePath,
-                        url: value,
-                        altText: form.coverMedia?.altText,
-                      })
-                    }
-                  />
-                  <label className="mt-5 inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950">
+                  <label className="mt-5 inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:border-neutral-300">
                     {isUploadingCover ? "Subiendo..." : "Subir/reemplazar portada"}
                     <input
                       className="sr-only"
@@ -408,69 +418,41 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
             <section className="space-y-8 border border-neutral-200 bg-white p-7">
               <SectionHeading
                 label="Media adicional"
-                title="Galería y documentos"
+                title="Galería y planos"
                 description="Agrega imágenes, planos o documentos que complementen la presentación del proyecto."
               />
 
-              <div className="grid gap-5 lg:grid-cols-5">
-                <SelectField
-                  label="Role"
-                  value={mediaForm.role}
-                  options={mediaRoleOptions}
-                  onChange={(value) => setMediaForm((current) => ({ ...current, role: value as ProjectMediaRole }))}
+              <div className="grid gap-8 lg:grid-cols-2">
+                <MediaUploadPanel
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={!currentProjectId || uploadingRole === "gallery"}
+                  form={mediaForms.gallery}
+                  isUploading={uploadingRole === "gallery"}
+                  media={galleryMedia}
+                  onFileChange={(event) => handleMediaUpload(event, "gallery")}
+                  onFormChange={(patch) => patchMediaForm("gallery", patch)}
+                  onToggleVisibility={toggleMediaVisibility}
+                  title="Galería"
+                  uploadLabel="Subir imagen"
                 />
-                <TextField label="Título" value={mediaForm.title} onChange={(value) => setMediaForm((current) => ({ ...current, title: value }))} />
-                <NumberField label="Orden" value={mediaForm.sortOrder} onChange={(value) => setMediaForm((current) => ({ ...current, sortOrder: value ?? 0 }))} />
-                <TextField label="Alt text" value={mediaForm.altText} onChange={(value) => setMediaForm((current) => ({ ...current, altText: value }))} />
-                <TextField label="Descripción" value={mediaForm.description} onChange={(value) => setMediaForm((current) => ({ ...current, description: value }))} />
-              </div>
-
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <CheckboxField label="Visible" checked={mediaForm.isVisible} onChange={(value) => setMediaForm((current) => ({ ...current, isVisible: value }))} />
-                <label className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800">
-                  {isUploadingMedia ? "Subiendo..." : "Subir media"}
-                  <input
-                    className="sr-only"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                    disabled={!currentProjectId || isUploadingMedia}
-                    onChange={handleMediaUpload}
-                  />
-                </label>
+                <MediaUploadPanel
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  disabled={!currentProjectId || uploadingRole === "plan"}
+                  form={mediaForms.plan}
+                  isUploading={uploadingRole === "plan"}
+                  media={planMedia}
+                  onFileChange={(event) => handleMediaUpload(event, "plan")}
+                  onFormChange={(patch) => patchMediaForm("plan", patch)}
+                  onToggleVisibility={toggleMediaVisibility}
+                  title="Planos"
+                  uploadLabel="Subir archivo"
+                />
               </div>
 
               {!currentProjectId ? (
                 <p className="text-sm text-neutral-500">Guarda el proyecto antes de subir media adicional.</p>
               ) : null}
               {mediaErrorMessage ? <p className="text-sm text-red-600">{mediaErrorMessage}</p> : null}
-
-              <div className="divide-y divide-neutral-200 border-y border-neutral-200">
-                {projectMedia.length === 0 ? (
-                  <p className="py-6 text-sm text-neutral-500">Todavía no hay media adicional.</p>
-                ) : (
-                  projectMedia.map((media) => (
-                    <article key={media.id} className="grid gap-5 py-5 lg:grid-cols-[8rem_1fr_9rem_8rem] lg:items-center">
-                      <MediaPreview media={media} />
-                      <div>
-                        <h3 className="font-title text-xl font-medium">{media.title ?? media.id}</h3>
-                        <p className="mt-1 text-sm text-neutral-500">
-                          {getMediaRoleLabel(media.role)} · {media.mimeType ?? media.assetType}
-                        </p>
-                      </div>
-                      <span className={`w-fit border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${media.isVisible ? "border-neutral-950 bg-neutral-950 text-white" : "border-neutral-200 text-neutral-400"}`}>
-                        {media.isVisible ? "Visible" : "Oculta"}
-                      </span>
-                      <button
-                        type="button"
-                        className="border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:border-neutral-950"
-                        onClick={() => toggleMediaVisibility(media)}
-                      >
-                        {media.isVisible ? "Ocultar" : "Mostrar"}
-                      </button>
-                    </article>
-                  ))
-                )}
-              </div>
             </section>
           </div>
         )}
@@ -496,17 +478,14 @@ function createEmptyProject(): Project {
 
 function createEmptyMediaForm(): MediaFormState {
   return {
-    altText: "",
-    description: "",
     isVisible: true,
-    role: "gallery",
     sortOrder: 0,
     title: "",
   };
 }
 
-function normalizeProject(project: Project): Project {
-  const slug = project.slug || slugify(project.title);
+function normalizeProject(project: Project, keepExistingSlug: boolean): Project {
+  const slug = keepExistingSlug && project.slug ? project.slug : slugify(project.title);
 
   return {
     ...project,
@@ -517,11 +496,11 @@ function normalizeProject(project: Project): Project {
     primaryCategoryId: project.primaryCategoryId || project.categoryIds[0],
     coverMedia: project.coverMedia?.url
       ? {
-          assetType: "image",
-          storagePath: project.coverMedia.storagePath,
-          url: project.coverMedia.url,
-          altText: project.coverMedia.altText || project.title,
-        }
+        assetType: "image",
+        storagePath: project.coverMedia.storagePath,
+        url: project.coverMedia.url,
+        altText: project.coverMedia.altText || project.title,
+      }
       : undefined,
   };
 }
@@ -536,7 +515,7 @@ function slugify(value: string) {
 }
 
 function getMediaRoleLabel(role: ProjectMediaRole) {
-  return mediaRoleOptions.find((option) => option.value === role)?.label ?? role;
+  return mediaRoleLabels[role] ?? role;
 }
 
 function SectionHeading({
@@ -577,7 +556,7 @@ function MultiCategorySelect({
       <FieldLabel>Categorías</FieldLabel>
       <button
         type="button"
-        className="mt-3 flex w-full cursor-pointer items-center justify-between border border-neutral-300 bg-white px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none"
+        className="mt-3 flex w-full cursor-pointer items-center justify-between border border-neutral-300 bg-white px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
         onClick={onOpenChange}
       >
         <span className="truncate">{selectedLabel}</span>
@@ -591,6 +570,7 @@ function MultiCategorySelect({
               className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm transition hover:bg-neutral-50"
             >
               <input
+                className="accent-neutral-950"
                 type="checkbox"
                 checked={selectedIds.includes(category.id)}
                 onChange={() => onToggle(category.id)}
@@ -600,6 +580,77 @@ function MultiCategorySelect({
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function MediaUploadPanel({
+  accept,
+  disabled,
+  form,
+  isUploading,
+  media,
+  onFileChange,
+  onFormChange,
+  onToggleVisibility,
+  title,
+  uploadLabel,
+}: {
+  accept: string;
+  disabled: boolean;
+  form: MediaFormState;
+  isUploading: boolean;
+  media: ProjectMedia[];
+  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onFormChange: (patch: Partial<MediaFormState>) => void;
+  onToggleVisibility: (media: ProjectMedia) => void;
+  title: string;
+  uploadLabel: string;
+}) {
+  return (
+    <div className="border border-neutral-200 p-5">
+      <h3 className="font-title text-2xl font-medium">{title}</h3>
+      <div className="mt-6 grid gap-5 sm:grid-cols-2">
+        <TextField label="Título opcional" value={form.title} onChange={(value) => onFormChange({ title: value })} />
+        <NumberField label="Orden" value={form.sortOrder} onChange={(value) => onFormChange({ sortOrder: value ?? 0 })} />
+      </div>
+      <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <SwitchField label="Visible" checked={form.isVisible} onChange={(value) => onFormChange({ isVisible: value })} />
+        <label className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:bg-neutral-950">
+          {isUploading ? "Subiendo..." : uploadLabel}
+          <input
+            className="sr-only"
+            type="file"
+            accept={accept}
+            disabled={disabled}
+            onChange={onFileChange}
+          />
+        </label>
+      </div>
+      <div className="mt-6 divide-y divide-neutral-200 border-y border-neutral-200">
+        {media.length === 0 ? (
+          <p className="py-5 text-sm text-neutral-500">Todavía no hay archivos.</p>
+        ) : (
+          media.map((item) => (
+            <article key={item.id} className="grid gap-4 py-5 sm:grid-cols-[6rem_1fr_auto] sm:items-center">
+              <MediaPreview media={item} />
+              <div>
+                <h4 className="font-title text-lg font-medium">{item.title ?? item.id}</h4>
+                <p className="mt-1 text-sm text-neutral-500">
+                  {getMediaRoleLabel(item.role)} · {item.mimeType ?? item.assetType} · Orden {item.sortOrder}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="cursor-pointer border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:border-neutral-950"
+                onClick={() => onToggleVisibility(item)}
+              >
+                {item.isVisible ? "Ocultar" : "Mostrar"}
+              </button>
+            </article>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -621,8 +672,44 @@ function MediaPreview({ media }: { media: ProjectMedia }) {
   return (
     <div className="overflow-hidden border border-neutral-200 bg-neutral-100">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={media.url} alt={media.altText ?? media.title ?? media.id} className="h-24 w-full object-cover" />
+      <img src={media.url} alt={media.title ?? media.id} className="h-24 w-full object-cover" />
     </div>
+  );
+}
+
+function StarToggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      className="flex min-h-14 cursor-pointer items-center justify-between border border-neutral-300 px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+      aria-pressed={checked}
+      onClick={() => onChange(!checked)}
+    >
+      <span>
+        <span className="block text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">Destacado</span>
+        <span className="mt-1 block font-medium text-neutral-800">{label}</span>
+      </span>
+      <span className={`text-2xl leading-none ${checked ? "text-neutral-950" : "text-neutral-300"}`} aria-hidden="true">
+        {checked ? "★" : "☆"}
+      </span>
+    </button>
+  );
+}
+
+function SwitchField({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      className="flex min-h-14 cursor-pointer items-center justify-between gap-4 border border-neutral-300 px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="font-medium text-neutral-800">{label}</span>
+      <span className={`relative h-6 w-11 border transition ${checked ? "border-neutral-950 bg-neutral-950" : "border-neutral-300 bg-neutral-100"}`}>
+        <span className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 bg-white transition ${checked ? "left-6" : "left-1"}`} />
+      </span>
+    </button>
   );
 }
 
@@ -630,7 +717,7 @@ function TextField({ label, onChange, value }: { label: string; onChange: (value
   return (
     <label className="block">
       <FieldLabel>{label}</FieldLabel>
-      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none" value={value} onChange={(event) => onChange(event.target.value)} />
+      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950" value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }
@@ -639,7 +726,7 @@ function NumberField({ label, onChange, value }: { label: string; onChange: (val
   return (
     <label className="block">
       <FieldLabel>{label}</FieldLabel>
-      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none" type="number" value={value ?? ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)} />
+      <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950" type="number" value={value ?? ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)} />
     </label>
   );
 }
@@ -648,7 +735,7 @@ function TextArea({ label, onChange, rows, value }: { label: string; onChange: (
   return (
     <label className="block">
       <FieldLabel>{label}</FieldLabel>
-      <textarea className="mt-3 w-full resize-y border border-neutral-300 px-4 py-3 text-sm leading-7 focus:border-neutral-950 focus:outline-none" rows={rows} value={value} onChange={(event) => onChange(event.target.value)} />
+      <textarea className="mt-3 w-full resize-y border border-neutral-300 px-4 py-3 text-sm leading-7 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950" rows={rows} value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }
@@ -664,27 +751,60 @@ function SelectField<T extends string>({
   options: Array<{ label: string; value: T }>;
   value: string;
 }) {
-  return (
-    <label className="block">
-      <FieldLabel>{label}</FieldLabel>
-      <select className="mt-3 w-full cursor-pointer border border-neutral-300 bg-white px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none" value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">Seleccionar</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value);
 
-function CheckboxField({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-neutral-700">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-      {label}
-    </label>
+    <div className="relative">
+      <FieldLabel>{label}</FieldLabel>
+      <button
+        type="button"
+        className="mt-3 flex min-h-12 w-full cursor-pointer items-center justify-between border border-neutral-300 bg-white px-4 py-3 text-left text-sm transition hover:border-neutral-950 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span className={selectedOption ? "text-neutral-950" : "text-neutral-400"}>
+          {selectedOption?.label ?? "Seleccionar"}
+        </span>
+        <span className={`text-neutral-400 transition ${isOpen ? "rotate-180" : ""}`}>↓</span>
+      </button>
+
+      {isOpen ? (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 border border-neutral-200 bg-white p-1 shadow-[0_18px_45px_rgba(0,0,0,0.08)]">
+          <button
+            type="button"
+            className={`flex w-full cursor-pointer items-center justify-between px-3 py-3 text-left text-sm transition ${
+              value === "" ? "bg-neutral-950 text-white" : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950"
+            }`}
+            onClick={() => {
+              onChange("");
+              setIsOpen(false);
+            }}
+          >
+            Seleccionar
+            {value === "" ? <span aria-hidden="true">•</span> : null}
+          </button>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`flex w-full cursor-pointer items-center justify-between px-3 py-3 text-left text-sm transition ${
+                option.value === value
+                  ? "bg-neutral-950 text-white"
+                  : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950"
+              }`}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+            >
+              {option.label}
+              {option.value === value ? <span aria-hidden="true">•</span> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

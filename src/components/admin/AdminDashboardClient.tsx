@@ -70,7 +70,7 @@ export function AdminDashboardClient() {
               className={`mt-8 inline-flex items-center gap-3 text-sm font-semibold transition ${
                 module.label === "Próximamente"
                   ? "pointer-events-none text-neutral-400"
-                  : "text-neutral-950 hover:gap-4"
+                  : "cursor-pointer text-neutral-950 hover:gap-4"
               }`}
             >
               {module.label} <span aria-hidden="true">→</span>

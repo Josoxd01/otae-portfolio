@@ -25,6 +25,22 @@ function withId<T extends { id: string }>(id: string, data: T) {
   return { ...data, id };
 }
 
+function removeUndefinedValues<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => removeUndefinedValues(item)) as T;
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, item]) => item !== undefined)
+        .map(([key, item]) => [key, removeUndefinedValues(item)]),
+    ) as T;
+  }
+
+  return value;
+}
+
 export async function getAdminProjects() {
   const snapshot = await getDocs(collection(db, "projects"));
 
@@ -49,11 +65,11 @@ export async function saveAdminProject(project: Project) {
 
   await setDoc(
     projectRef,
-    {
+    removeUndefinedValues({
       ...project,
       updatedAt: now,
       createdAt: project.createdAt ?? now,
-    },
+    }),
     { merge: true },
   );
 }
@@ -74,10 +90,11 @@ export async function getAdminProjectMedia(projectId: string) {
 }
 
 export async function createAdminProjectMedia(projectId: string, media: Omit<ProjectMedia, "id">) {
-  const mediaRef = await addDoc(collection(db, "projects", projectId, "media"), media);
+  const cleanMedia = removeUndefinedValues(media);
+  const mediaRef = await addDoc(collection(db, "projects", projectId, "media"), cleanMedia);
   await updateDoc(mediaRef, { id: mediaRef.id });
 
-  return { ...media, id: mediaRef.id };
+  return { ...cleanMedia, id: mediaRef.id };
 }
 
 export async function updateAdminProjectMedia(

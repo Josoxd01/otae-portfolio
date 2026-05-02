@@ -47,7 +47,7 @@ export function AdminCategoriesPageClient() {
         </div>
         <Link
           href="/admin/categories/new"
-          className="inline-flex items-center justify-center bg-neutral-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
+          className="inline-flex cursor-pointer items-center justify-center bg-neutral-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
         >
           Nueva categoría
         </Link>
@@ -74,13 +74,13 @@ export function AdminCategoriesPageClient() {
                 <div className="flex flex-wrap gap-3 lg:justify-end">
                   <Link
                     href={`/admin/categories/${category.id}/edit`}
-                    className="border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:border-neutral-950"
+                    className="cursor-pointer border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:border-neutral-950"
                   >
                     Editar
                   </Link>
                   <button
                     type="button"
-                    className="border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:border-neutral-950"
+                    className="cursor-pointer border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:border-neutral-950"
                     onClick={() => toggleCategory(category)}
                   >
                     {category.isActive ? "Desactivar" : "Activar"}
