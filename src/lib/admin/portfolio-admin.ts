@@ -5,6 +5,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  writeBatch,
   collection,
 } from "firebase/firestore";
 
@@ -19,6 +20,16 @@ import type {
 
 function sortBySortOrder<T extends { sortOrder: number }>(items: T[]) {
   return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+function sortProjects(projects: Project[]) {
+  return [...projects].sort((a, b) => {
+    if (a.sortOrder !== b.sortOrder) {
+      return a.sortOrder - b.sortOrder;
+    }
+
+    return a.title.localeCompare(b.title);
+  });
 }
 
 function withId<T extends { id: string }>(id: string, data: T) {
@@ -44,7 +55,7 @@ function removeUndefinedValues<T>(value: T): T {
 export async function getAdminProjects() {
   const snapshot = await getDocs(collection(db, "projects"));
 
-  return sortBySortOrder(
+  return sortProjects(
     snapshot.docs.map((item) => withId(item.id, item.data() as Project)),
   );
 }
@@ -79,6 +90,20 @@ export async function setAdminProjectActive(projectId: string, isActive: boolean
     isActive,
     updatedAt: new Date().toISOString(),
   });
+}
+
+export async function updateAdminProjectSortOrders(projects: Array<Pick<Project, "id" | "sortOrder">>) {
+  const batch = writeBatch(db);
+  const updatedAt = new Date().toISOString();
+
+  projects.forEach((project) => {
+    batch.update(doc(db, "projects", project.id), {
+      sortOrder: project.sortOrder,
+      updatedAt,
+    });
+  });
+
+  await batch.commit();
 }
 
 export async function getAdminProjectMedia(projectId: string) {

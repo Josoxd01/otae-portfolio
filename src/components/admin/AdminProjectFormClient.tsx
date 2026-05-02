@@ -54,7 +54,6 @@ interface MediaFormState {
 
 export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProps) {
   const router = useRouter();
-  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [coverUploadMessage, setCoverUploadMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -81,9 +80,6 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
     .filter(Boolean)
     .join(", ");
   const currentProjectId = form.id || projectId;
-  const hasDuplicateSortOrder =
-    form.sortOrder !== undefined &&
-    allProjects.some((project) => project.id !== form.id && project.sortOrder === form.sortOrder);
   const galleryMedia = projectMedia.filter((media) => media.role === "gallery");
   const planMedia = projectMedia.filter((media) => media.role === "plan");
 
@@ -103,11 +99,14 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
         }
 
         setCategories(allCategories);
-        setAllProjects(projects);
-
         if (project) {
           setForm(project);
           setProjectMedia(await getAdminProjectMedia(project.id));
+        } else if (!projectId) {
+          setForm((current) => ({
+            ...current,
+            sortOrder: getNextProjectSortOrder(projects),
+          }));
         }
       } catch (error) {
         console.warn("Could not load project form data.", error);
@@ -317,7 +316,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
 
             <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
               <section className="border border-neutral-200 bg-white p-7">
-                <SectionHeading label="Estado del proyecto" title="Publicación y orden" />
+                <SectionHeading label="Estado del proyecto" title="Publicación" />
                 <div className="mt-8 space-y-6">
                   <SelectField
                     label="Etapa"
@@ -325,15 +324,9 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                     options={projectStageOptions}
                     onChange={(value) => updateField("projectStage", value as ProjectStage)}
                   />
-                  <NumberField label="Orden" value={form.sortOrder} onChange={(value) => updateField("sortOrder", value ?? 0)} />
-                  {form.sortOrder === undefined ? (
-                    <p className="text-sm text-red-600">El orden debe ser un número.</p>
-                  ) : null}
-                  {hasDuplicateSortOrder ? (
-                    <p className="text-sm text-amber-700">
-                      Otro proyecto ya usa este orden. Puedes guardarlo, pero revisa la secuencia editorial.
-                    </p>
-                  ) : null}
+                  <p className="border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm leading-7 text-neutral-500">
+                    El orden se gestiona desde el listado de proyectos.
+                  </p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <StarToggle
                       checked={form.isFeatured}
@@ -471,9 +464,18 @@ function createEmptyProject(): Project {
     categoryIds: [],
     isFeatured: false,
     isActive: true,
-    sortOrder: 0,
+    sortOrder: 10,
     projectStage: "design",
   };
+}
+
+function getNextProjectSortOrder(projects: Project[]) {
+  const maxSortOrder = projects.reduce(
+    (maxOrder, project) => Math.max(maxOrder, project.sortOrder ?? 0),
+    0,
+  );
+
+  return maxSortOrder > 0 ? maxSortOrder + 10 : 10;
 }
 
 function createEmptyMediaForm(): MediaFormState {
