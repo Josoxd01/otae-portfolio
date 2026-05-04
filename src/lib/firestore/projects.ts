@@ -1,3 +1,6 @@
+import { collection, getDocs, getFirestore, query, where } from "firebase/firestore/lite";
+
+import { app } from "@/lib/firebase";
 import type { Project, ProjectCategory, ProjectMedia } from "@/types/portfolio";
 
 export interface ProjectsPageData {
@@ -21,11 +24,6 @@ function withId<T extends { id: string }>(id: string, data: T) {
 }
 
 export async function getProjectsPageDataFromFirestore(): Promise<ProjectsPageData> {
-  const [{ collection, getDocs, getFirestore, query, where }, { app }] = await Promise.all([
-    import("firebase/firestore/lite"),
-    import("@/lib/firebase"),
-  ]);
-
   const db = getFirestore(app);
 
   const [projectsSnapshot, categoriesSnapshot] = await Promise.all([
@@ -63,11 +61,6 @@ export async function getProjectsPageDataFromFirestore(): Promise<ProjectsPageDa
 }
 
 export async function getProjectBySlugFromFirestore(slug: string): Promise<Project | undefined> {
-  const [{ collection, getDocs, getFirestore, query, where }, { app }] = await Promise.all([
-    import("firebase/firestore/lite"),
-    import("@/lib/firebase"),
-  ]);
-
   const db = getFirestore(app);
   const snapshot = await getDocs(
     query(collection(db, "projects"), where("slug", "==", slug), where("isActive", "==", true)),
@@ -78,11 +71,6 @@ export async function getProjectBySlugFromFirestore(slug: string): Promise<Proje
 }
 
 export async function getProjectMediaFromFirestore(projectId: string): Promise<ProjectMedia[]> {
-  const [{ collection, getDocs, getFirestore, query, where }, { app }] = await Promise.all([
-    import("firebase/firestore/lite"),
-    import("@/lib/firebase"),
-  ]);
-
   const db = getFirestore(app);
   const snapshot = await getDocs(
     query(collection(db, "projects", projectId, "media"), where("isVisible", "==", true)),
@@ -92,11 +80,6 @@ export async function getProjectMediaFromFirestore(projectId: string): Promise<P
 }
 
 export async function getProjectCategoriesFromFirestore(): Promise<ProjectCategory[]> {
-  const [{ collection, getDocs, getFirestore, query, where }, { app }] = await Promise.all([
-    import("firebase/firestore/lite"),
-    import("@/lib/firebase"),
-  ]);
-
   const db = getFirestore(app);
   const snapshot = await getDocs(
     query(collection(db, "project_categories"), where("isActive", "==", true)),

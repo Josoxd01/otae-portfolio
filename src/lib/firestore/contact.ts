@@ -1,3 +1,6 @@
+import { collection, doc, getDoc, getDocs, getFirestore, query, where } from "firebase/firestore/lite";
+
+import { app } from "@/lib/firebase";
 import type { ContactChannel, StudioProfile } from "@/types/portfolio";
 
 export interface ContactData {
@@ -14,9 +17,6 @@ function withId<T extends { id: string }>(id: string, data: T) {
 }
 
 export async function getContactDataFromFirestore(): Promise<ContactData> {
-  const [{ collection, doc, getDoc, getDocs, getFirestore, query, where }, { app }] =
-    await Promise.all([import("firebase/firestore/lite"), import("@/lib/firebase")]);
-
   const db = getFirestore(app);
 
   const [studioSnapshot, channelsSnapshot] = await Promise.all([

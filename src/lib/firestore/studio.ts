@@ -1,3 +1,6 @@
+import { collection, doc, getDoc, getDocs, getFirestore, query, where } from "firebase/firestore/lite";
+
+import { app } from "@/lib/firebase";
 import type { ContactChannel, StudioProfile, TeamMember } from "@/types/portfolio";
 
 export interface StudioData {
@@ -15,9 +18,6 @@ function withId<T extends { id: string }>(id: string, data: T) {
 }
 
 export async function getStudioDataFromFirestore(): Promise<StudioData> {
-  const [{ collection, doc, getDoc, getDocs, getFirestore, query, where }, { app }] =
-    await Promise.all([import("firebase/firestore/lite"), import("@/lib/firebase")]);
-
   const db = getFirestore(app);
 
   const [studioSnapshot, teamSnapshot, channelsSnapshot] = await Promise.all([
