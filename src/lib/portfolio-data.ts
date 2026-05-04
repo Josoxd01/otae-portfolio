@@ -1,20 +1,11 @@
-import {
-  contactChannels,
-  projectCategories,
-  projectMediaByProjectId,
-  projects,
-  studioProfile,
-  teamMembers,
-} from "@/data";
+import { contactChannels, projectCategories, projectMediaByProjectId, projects, studioProfile, teamMembers, } from "@/data";
 
 export function getStudioProfile() {
   return studioProfile;
 }
 
 export function getActiveProjects() {
-  return projects
-    .filter((project) => project.isActive)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  return projects.filter((project) => project.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export function getFeaturedProjects() {
@@ -30,19 +21,13 @@ export function getProjectMediaByProjectId() {
 }
 
 export function getActiveProjectCategories() {
-  return projectCategories
-    .filter((category) => category.isActive)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  return projectCategories.filter((category) => category.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export function getTeamMembers() {
-  return teamMembers
-    .filter((member) => member.isActive)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  return teamMembers.filter((member) => member.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export function getContactChannels() {
-  return contactChannels
-    .filter((channel) => channel.isActive)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  return contactChannels.filter((channel) => channel.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 }
