@@ -9,9 +9,7 @@ import { useContactData } from "@/hooks/useContactData";
 import type { ContactData } from "@/lib/firestore/contact";
 import type { StudioProfile } from "@/types/portfolio";
 
-interface ContactPageClientProps {
-  initialData: ContactData;
-}
+interface ContactPageClientProps { initialData: ContactData }
 
 const projectTypeOptions = ["Residencial", "Comercial", "Interiores", "Urbano", "Consultorios", "Otro"];
 
@@ -225,17 +223,7 @@ function ContactGroup({ children, title }: { children: React.ReactNode; title: s
   );
 }
 
-function ContactRow({
-  href,
-  icon,
-  label,
-  value,
-}: {
-  href?: string;
-  icon: IconName;
-  label: string;
-  value?: string;
-}) {
+function ContactRow({ href, icon, label, value }: { href?: string; icon: IconName; label: string; value?: string }) {
   if (!value) {
     return null;
   }
@@ -266,17 +254,7 @@ function ContactRow({
   return <div className="grid grid-cols-[0.45fr_1fr] gap-6 py-4 text-sm">{content}</div>;
 }
 
-function Field({
-  icon,
-  label,
-  name,
-  type = "text",
-}: {
-  icon: IconName;
-  label: string;
-  name: string;
-  type?: string;
-}) {
+function Field({ icon, label, name, type = "text" }: { icon: IconName; label: string; name: string; type?: string }) {
   return (
     <label>
       <span className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-400">

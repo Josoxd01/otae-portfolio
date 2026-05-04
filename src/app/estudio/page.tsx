@@ -4,11 +4,7 @@ import { getContactChannels, getStudioProfile, getTeamMembers } from "@/lib/port
 export default function StudioPage() {
   return (
     <StudioPageClient
-      initialData={{
-        contactChannels: getContactChannels(),
-        studioProfile: getStudioProfile(),
-        teamMembers: getTeamMembers(),
-      }}
+      initialData={{ contactChannels: getContactChannels(), studioProfile: getStudioProfile(), teamMembers: getTeamMembers() }}
     />
   );
 }

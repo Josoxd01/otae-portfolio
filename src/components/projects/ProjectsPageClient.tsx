@@ -25,17 +25,8 @@ const projectsPerPage = 3;
 const heroVideoUrl = "/videos/projects-hero.mp4";
 const heroFallbackImageUrl = "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&w=2200&q=80";
 
-export function ProjectsPageClient({
-  categories,
-  initialCategoryId = "all",
-  projectMediaByProjectId,
-  projects,
-}: ProjectsPageClientProps) {
-  const projectsPageData = useProjectsPageData({
-    categories,
-    projectMediaByProjectId,
-    projects,
-  });
+export function ProjectsPageClient({ categories, initialCategoryId = "all", projectMediaByProjectId, projects }: ProjectsPageClientProps) {
+  const projectsPageData = useProjectsPageData({ categories, projectMediaByProjectId, projects });
   const activeCategories = projectsPageData.categories;
   const activeProjectMediaByProjectId = projectsPageData.projectMediaByProjectId;
   const activeProjects = projectsPageData.projects;
@@ -47,10 +38,7 @@ export function ProjectsPageClient({
   const [videoFailed, setVideoFailed] = useState(false);
   const projectsListRef = useRef<HTMLDivElement | null>(null);
 
-  const categoryById = useMemo(
-    () => new Map(activeCategories.map((category) => [category.id, category])),
-    [activeCategories],
-  );
+  const categoryById = useMemo(() => new Map(activeCategories.map((category) => [category.id, category])), [activeCategories]);
 
   const categoryOptions = useMemo<FilterOption[]>(
     () => [
@@ -480,10 +468,7 @@ function getPrimaryCategory(project: Project, categoryById: Map<string, ProjectC
   return categoryById.get(project.categoryIds[0]);
 }
 
-function getProjectImages(
-  project: Project,
-  projectMediaByProjectId: Record<string, ProjectMedia[]>,
-) {
+function getProjectImages(project: Project, projectMediaByProjectId: Record<string, ProjectMedia[]>) {
   const projectMedia = projectMediaByProjectId[project.id] ?? [];
   const visibleImages = projectMedia
     .filter((media) => media.isVisible && media.assetType === "image")

@@ -1,19 +1,9 @@
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { ProjectsPageClient } from "@/components/projects/ProjectsPageClient";
-import {
-  getActiveProjectCategories,
-  getActiveProjects,
-  getContactChannels,
-  getProjectMediaByProjectId,
-  getStudioProfile,
-} from "@/lib/portfolio-data";
+import { getActiveProjectCategories, getActiveProjects, getContactChannels, getProjectMediaByProjectId, getStudioProfile } from "@/lib/portfolio-data";
 
-interface ProjectsPageProps {
-  searchParams?: Promise<{
-    categoria?: string | string[];
-  }>;
-}
+interface ProjectsPageProps { searchParams?: Promise<{ categoria?: string | string[] }> }
 
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps) {
   const projects = getActiveProjects();
@@ -22,12 +12,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   const projectMediaByProjectId = getProjectMediaByProjectId();
   const studioProfile = getStudioProfile();
   const params = await searchParams;
-  const categoryQuery = Array.isArray(params?.categoria)
-    ? params?.categoria[0]
-    : params?.categoria;
-  const initialCategoryId =
-    categories.find((category) => category.slug === categoryQuery || category.id === categoryQuery)
-      ?.id ?? "all";
+  const categoryQuery = Array.isArray(params?.categoria) ? params?.categoria[0] : params?.categoria;
+  const initialCategoryId = categories.find((category) => category.slug === categoryQuery || category.id === categoryQuery)?.id ?? "all";
 
   return (
     <>

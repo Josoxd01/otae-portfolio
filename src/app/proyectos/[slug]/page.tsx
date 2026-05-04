@@ -1,25 +1,12 @@
 import { notFound } from "next/navigation";
 
 import { ProjectDetailPageClient } from "@/components/projects/ProjectDetailPageClient";
-import {
-  getActiveProjectCategories,
-  getActiveProjects,
-  getContactChannels,
-  getProjectBySlug,
-  getProjectMediaByProjectId,
-  getStudioProfile,
-} from "@/lib/portfolio-data";
+import { getActiveProjectCategories, getActiveProjects, getContactChannels, getProjectBySlug, getProjectMediaByProjectId, getStudioProfile } from "@/lib/portfolio-data";
 
-interface ProjectDetailPageProps {
-  params: Promise<{
-    slug: string;
-  }>;
-}
+interface ProjectDetailPageProps { params: Promise<{ slug: string }> }
 
 export function generateStaticParams() {
-  return getActiveProjects().map((project) => ({
-    slug: project.slug,
-  }));
+  return getActiveProjects().map((project) => ({ slug: project.slug }));
 }
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {

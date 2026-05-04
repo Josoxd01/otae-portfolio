@@ -9,18 +9,14 @@ import { useStudioData } from "@/hooks/useStudioData";
 import type { StudioData } from "@/lib/firestore/studio";
 import type { TeamMember } from "@/types/portfolio";
 
-interface StudioPageClientProps {
-  initialData: StudioData;
-}
+interface StudioPageClientProps { initialData: StudioData }
 
 export function StudioPageClient({ initialData }: StudioPageClientProps) {
   const { contactChannels, studioProfile, teamMembers } = useStudioData(initialData);
   const [activeMember, setActiveMember] = useState<TeamMember | null>(null);
   const heroImage = studioProfile.heroImage;
   const aboutImage = studioProfile.aboutImage;
-  const aboutParagraphs =
-    studioProfile.aboutParagraphs ??
-    [studioProfile.aboutText, studioProfile.description].filter(Boolean);
+  const aboutParagraphs = studioProfile.aboutParagraphs ?? [studioProfile.aboutText, studioProfile.description].filter(Boolean);
 
   useEffect(() => {
     if (!activeMember) {

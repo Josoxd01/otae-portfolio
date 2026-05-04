@@ -1,11 +1,5 @@
 import { HomePageClient } from "@/components/home/HomePageClient";
-import {
-  getActiveProjectCategories,
-  getActiveProjects,
-  getContactChannels,
-  getFeaturedProjects,
-  getStudioProfile,
-} from "@/lib/portfolio-data";
+import { getActiveProjectCategories, getActiveProjects, getContactChannels, getFeaturedProjects, getStudioProfile } from "@/lib/portfolio-data";
 
 export default function Home() {
   const initialData = {
