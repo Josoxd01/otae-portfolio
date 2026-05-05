@@ -14,31 +14,24 @@ interface FeaturedProjectsCarouselProps {
 export function FeaturedProjectsCarousel({ categories, projects }: FeaturedProjectsCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const categoryById = useMemo(
-    () => new Map(categories.map((category) => [category.id, category])),
-    [categories],
-  );
+  const categoryById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories],);
 
   useEffect(() => {
-    if (projects.length < 2) {
-      return;
-    }
+    if (projects.length < 2) return;
 
-    const timer = window.setInterval(() => {
+    const timer = window.setTimeout(() => {
       setActiveIndex((current) => (current + 1) % projects.length);
     }, 10000);
 
-    return () => window.clearInterval(timer);
-  }, [projects.length]);
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, projects.length]);
 
   if (projects.length === 0) {
     return null;
   }
 
   const activeProject = projects[activeIndex];
-  const primaryCategory = activeProject.primaryCategoryId
-    ? categoryById.get(activeProject.primaryCategoryId)
-    : undefined;
+  const primaryCategory = activeProject.primaryCategoryId ? categoryById.get(activeProject.primaryCategoryId) : undefined;
 
   function goToPrevious() {
     setActiveIndex((current) => (current - 1 + projects.length) % projects.length);
@@ -112,9 +105,8 @@ export function FeaturedProjectsCarousel({ categories, projects }: FeaturedProje
               <button
                 key={project.id}
                 type="button"
-                className={`h-1.5 transition ${
-                  index === activeIndex ? "w-9 bg-white" : "w-4 bg-white/40"
-                }`}
+                className={`h-1.5 transition ${index === activeIndex ? "w-9 bg-white" : "w-4 bg-white/40"
+                  }`}
                 aria-label={`Ir al proyecto ${project.title}`}
                 onClick={() => setActiveIndex(index)}
               />
