@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
+import { removeUndefinedValues, sortBySortOrder, sortProjects } from "@/lib/portfolio-helpers";
 import type {
   Project,
   ProjectCategory,
@@ -19,38 +20,8 @@ import type {
   TeamMember,
 } from "@/types/portfolio";
 
-function sortBySortOrder<T extends { sortOrder: number }>(items: T[]) {
-  return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
-}
-
-function sortProjects(projects: Project[]) {
-  return [...projects].sort((a, b) => {
-    if (a.sortOrder !== b.sortOrder) {
-      return a.sortOrder - b.sortOrder;
-    }
-
-    return a.title.localeCompare(b.title);
-  });
-}
-
 function withId<T extends { id: string }>(id: string, data: T) {
   return { ...data, id };
-}
-
-function removeUndefinedValues<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((item) => removeUndefinedValues(item)) as T;
-  }
-
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([, item]) => item !== undefined)
-        .map(([key, item]) => [key, removeUndefinedValues(item)]),
-    ) as T;
-  }
-
-  return value;
 }
 
 export async function getAdminProjects() {

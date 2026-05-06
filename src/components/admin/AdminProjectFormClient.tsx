@@ -16,6 +16,7 @@ import {
   setAdminProjectMediaVisible,
   updateAdminProjectMediaSortOrders,
 } from "@/lib/admin/portfolio-admin";
+import { slugify } from "@/lib/portfolio-helpers";
 import { deleteStorageFile, uploadProjectCoverMedia, uploadProjectMedia } from "@/lib/storage";
 import type {
   Project,
@@ -665,15 +666,6 @@ function normalizeProject(project: Project, keepExistingSlug: boolean): Project 
       }
       : undefined,
   };
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 function getMediaRoleLabel(role: ProjectMediaRole) {

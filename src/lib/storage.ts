@@ -1,25 +1,19 @@
 import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { storage } from "@/lib/firebase";
+import {
+  getAssetTypeFromMimeType,
+  safeFileName,
+  validateProjectCoverFile,
+  validateProjectMediaFile,
+} from "@/lib/media-helpers";
 import type { AssetType, ProjectMediaRole, StudioProfile } from "@/types/portfolio";
-
-const maxFileSize = 5 * 1024 * 1024;
-const coverMimeTypes = ["image/jpeg", "image/png", "image/webp"];
-const projectMediaMimeTypes = [...coverMimeTypes, "application/pdf"];
 
 interface UploadedProjectMedia {
   assetType: AssetType;
   mimeType: string;
   storagePath: string;
   url: string;
-}
-
-export function validateProjectCoverFile(file: File) {
-  validateFile(file, coverMimeTypes, "La portada debe ser JPG, PNG o WebP.");
-}
-
-export function validateProjectMediaFile(file: File) {
-  validateFile(file, projectMediaMimeTypes, "La media debe ser una imagen JPG, PNG, WebP o PDF.");
 }
 
 export async function uploadProjectCoverMedia(projectId: string, file: File) {
@@ -70,16 +64,6 @@ export async function deleteStorageFile(storagePath: string) {
   await deleteObject(ref(storage, storagePath));
 }
 
-function validateFile(file: File, allowedTypes: string[], typeMessage: string) {
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error(typeMessage);
-  }
-
-  if (file.size > maxFileSize) {
-    throw new Error("El archivo no puede superar 5 MB.");
-  }
-}
-
 async function uploadProjectFile(
   projectId: string,
   file: File,
@@ -94,22 +78,9 @@ async function uploadFile(storagePath: string, file: File): Promise<UploadedProj
   const url = await getDownloadURL(snapshot.ref);
 
   return {
-    assetType: file.type === "application/pdf" ? "pdf" : "image",
+    assetType: getAssetTypeFromMimeType(file.type),
     mimeType: file.type,
     storagePath,
     url,
   };
-}
-
-function safeFileName(fileName: string) {
-  const extension = fileName.split(".").pop();
-  const baseName = fileName.replace(/\.[^/.]+$/, "");
-  const safeBaseName = baseName
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-
-  return `${safeBaseName || "media"}${extension ? `.${extension.toLowerCase()}` : ""}`;
 }

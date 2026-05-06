@@ -10,6 +10,7 @@ import {
   getAdminCategory,
   saveAdminCategory,
 } from "@/lib/admin/portfolio-admin";
+import { slugify } from "@/lib/portfolio-helpers";
 import { uploadCategoryCoverMedia } from "@/lib/storage";
 import type { ProjectCategory } from "@/types/portfolio";
 
@@ -250,15 +251,6 @@ function normalizeCategory(category: ProjectCategory, keepExistingSlug: boolean)
         }
       : undefined,
   };
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 function TextField({ label, onChange, value }: { label: string; onChange: (value: string) => void; value: string }) {
