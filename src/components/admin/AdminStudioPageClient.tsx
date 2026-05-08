@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { otaeLogoMedia } from "@/components/layout/brand";
 import { getAdminStudioProfile, saveAdminStudioProfile } from "@/lib/admin/portfolio-admin";
 import { uploadStudioMedia } from "@/lib/storage";
 import type { MediaReference, StudioProfile } from "@/types/portfolio";
 
-type StudioMediaField = "logoMedia" | "heroImage" | "aboutImage";
+type StudioMediaField = "heroImage" | "aboutImage";
 
 const mediaFields: Array<{ field: StudioMediaField; label: string; folder: string }> = [
-  { field: "logoMedia", label: "Logo", folder: "logo" },
   { field: "heroImage", label: "Imagen principal / oficina", folder: "hero" },
   { field: "aboutImage", label: "Imagen acerca del estudio / equipo", folder: "about" },
 ];
@@ -59,7 +59,7 @@ export function AdminStudioPageClient() {
     setIsSaving(true);
 
     try {
-      await saveAdminStudioProfile(studioProfile);
+      await saveAdminStudioProfile({ ...studioProfile, logoMedia: undefined });
       setUploadMessage("Perfil del estudio guardado.");
     } catch (error) {
       console.warn("Could not save studio profile.", error);
@@ -209,6 +209,7 @@ export function AdminStudioPageClient() {
             </section>
 
             <section className="grid gap-6 lg:grid-cols-2">
+              <LogoReadOnlyCard />
               {mediaFields.map((item) => (
                 <MediaCard
                   key={item.field}
@@ -244,6 +245,30 @@ function SectionHeading({
       <h2 className="mt-4 font-title text-3xl font-medium">{title}</h2>
       {description ? <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600">{description}</p> : null}
     </div>
+  );
+}
+
+function LogoReadOnlyCard() {
+  return (
+    <article className="border border-neutral-200 bg-white p-7">
+      <div>
+        <p className="section-label">logo</p>
+        <h2 className="mt-4 font-title text-2xl font-medium">Logotipo principal</h2>
+        <p className="mt-4 text-sm leading-7 text-neutral-600">
+          El logotipo principal del sitio se administra como recurso fijo del sistema para
+          mantener consistencia visual. No es editable desde el panel.
+        </p>
+      </div>
+
+      <div className="mt-6 flex h-72 items-center justify-center border border-neutral-200 bg-neutral-50 px-8">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={otaeLogoMedia.url}
+          alt={otaeLogoMedia.altText ?? "OTAE"}
+          className="h-16 w-auto max-w-full object-contain"
+        />
+      </div>
+    </article>
   );
 }
 

@@ -33,10 +33,10 @@ export const studioProfile: StudioProfile = {
     "El estudio nace como una plataforma para desarrollar proyectos arquitectónicos, investigación urbana y colaboraciones docentes, integrando visión técnica, sensibilidad espacial y procesos de obra claros.",
   logoMedia: {
     id: "otae-logo",
-    url: "/mock/brand/otae-logo.svg",
+    url: "/brand/otae-logo.png",
     assetType: "image",
-    altText: "Logotipo de OTAE Studio.",
-    title: "OTAE Studio logo",
+    altText: "Logotipo de OTAE",
+    title: "Logotipo de OTAE",
   },
   heroMedia: {
     id: "otae-hero",
