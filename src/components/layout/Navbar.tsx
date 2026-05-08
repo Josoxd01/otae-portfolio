@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { BrandMark } from "@/components/layout/BrandMark";
+import { otaeLogoMedia } from "@/components/layout/brand";
+
 const navItems = [
   { label: "Proyectos", href: "/proyectos" },
   { label: "Estudio", href: "/estudio" },
@@ -17,10 +20,10 @@ export function Navbar() {
       <nav className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-6 sm:px-8 lg:px-12">
         <Link
           href="/"
-          className="font-title text-[15px] font-medium tracking-[0.42em] text-neutral-950"
+          className="flex h-10 items-center"
           aria-label="Ir al inicio de OTAE"
         >
-          OTAE
+          <BrandMark logoMedia={otaeLogoMedia} />
         </Link>
 
         <div className="hidden items-center gap-12 md:flex">

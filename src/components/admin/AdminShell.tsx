@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { BrandMark } from "@/components/layout/BrandMark";
+import { otaeLogoMedia } from "@/components/layout/brand";
 import { auth } from "@/lib/firebase";
 
 const adminLinks = [
@@ -59,8 +61,12 @@ export function AdminShell({ children }: AdminShellProps) {
       <header className="border-b border-neutral-200 bg-white px-6 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center justify-between gap-6">
-            <Link href="/admin" className="cursor-pointer font-title text-sm font-medium tracking-[0.42em]">
-              OTAE
+            <Link href="/admin" className="flex h-10 cursor-pointer items-center" aria-label="Ir al inicio del admin OTAE">
+              <BrandMark
+                logoMedia={otaeLogoMedia}
+                imageClassName="h-7 max-w-[7rem]"
+                textClassName="font-title text-sm font-medium tracking-[0.42em] text-neutral-950"
+              />
             </Link>
             <Link href="/" className="cursor-pointer text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400 transition hover:text-neutral-950">
               Ver sitio
