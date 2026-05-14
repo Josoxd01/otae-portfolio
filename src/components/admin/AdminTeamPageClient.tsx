@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { DragEvent, MouseEvent } from "react";
 
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   deleteAdminTeamMember,
@@ -14,13 +15,13 @@ import {
   setAdminTeamMemberActive,
   updateAdminTeamMemberSortOrders,
 } from "@/lib/admin/portfolio-admin";
-import { deleteStorageFile } from "@/lib/storage";
 import type { TeamMember } from "@/types/portfolio";
 
 const pageSizeOptions = [10, 20, 50];
 
 export function AdminTeamPageClient() {
   const router = useRouter();
+  const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
   const [deletingMemberId, setDeletingMemberId] = useState("");
   const [draggedMemberId, setDraggedMemberId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -93,31 +94,19 @@ export function AdminTeamPageClient() {
     }
   }
 
-  async function deleteMember(member: TeamMember) {
-    if (deletingMemberId) {
+  async function deleteMember() {
+    if (!deleteTarget || deletingMemberId) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "¿Seguro que quieres eliminar este miembro del equipo? Esta acción no se puede deshacer.",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setDeletingMemberId(member.id);
+    setDeletingMemberId(deleteTarget.id);
     setErrorMessage("");
 
     try {
-      if (member.photoMedia?.storagePath) {
-        await deleteStorageFile(member.photoMedia.storagePath);
-      }
-
-      await deleteAdminTeamMember(member.id);
+      await deleteAdminTeamMember(deleteTarget.id);
 
       const reorderedMembers = members
-        .filter((item) => item.id !== member.id)
+        .filter((item) => item.id !== deleteTarget.id)
         .map((item, index) => ({
           ...item,
           sortOrder: index + 1,
@@ -130,6 +119,7 @@ export function AdminTeamPageClient() {
           sortOrder: item.sortOrder,
         })),
       );
+      setDeleteTarget(null);
     } catch (error) {
       console.warn("Could not delete team member.", error);
       setErrorMessage(
@@ -174,6 +164,17 @@ export function AdminTeamPageClient() {
 
   return (
     <AdminShell>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Eliminar miembro del equipo"
+        description="Esta accion quitara el miembro del equipo del panel y del sitio publico. ¿Quieres continuar?"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        isLoading={Boolean(deletingMemberId)}
+        variant="danger"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteMember}
+      />
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="section-label">Admin / Equipo</p>
@@ -306,7 +307,7 @@ export function AdminTeamPageClient() {
                               disabled={deletingMemberId === member.id}
                               label="Eliminar"
                               icon={<TrashIcon />}
-                              onClick={() => deleteMember(member)}
+                              onClick={() => setDeleteTarget(member)}
                             />
                           </div>
                         </td>

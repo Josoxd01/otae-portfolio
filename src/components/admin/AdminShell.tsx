@@ -13,6 +13,7 @@ const adminLinks = [
   { href: "/admin", label: "Inicio" },
   { href: "/admin/projects", label: "Proyectos" },
   { href: "/admin/categories", label: "Categorías" },
+  { href: "/admin/blogs", label: "Blogs" },
   { href: "/admin/studio", label: "Estudio" },
   { href: "/admin/team", label: "Equipo" },
 ];

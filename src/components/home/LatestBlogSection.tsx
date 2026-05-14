@@ -5,21 +5,25 @@ import Link from "next/link";
 
 import { blogs } from "@/data/blogs";
 import { projectCategories } from "@/data/project-categories";
+import { useBlogPageData } from "@/hooks/useBlogPageData";
 import type { Blog, ProjectCategory } from "@/types/portfolio";
 
 const categoryById = new Map(projectCategories.map((category) => [category.id, category]));
 const readMoreLabel = "Leer más";
 
-const latestBlog = blogs
+const initialBlogs = blogs
   .filter((blog) => blog.status === "published")
   .sort((firstBlog, secondBlog) => {
     const firstDate = firstBlog.publishedAt ?? "";
     const secondDate = secondBlog.publishedAt ?? "";
 
     return secondDate.localeCompare(firstDate);
-  })[0];
+  });
 
 export function LatestBlogSection() {
+  const publishedBlogs = useBlogPageData(initialBlogs);
+  const latestBlog = publishedBlogs[0];
+
   if (!latestBlog) {
     return null;
   }

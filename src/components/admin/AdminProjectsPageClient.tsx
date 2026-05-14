@@ -7,8 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DragEvent, MouseEvent } from "react";
 
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
+  deleteAdminProject,
   getAdminCategories,
   getAdminProjects,
   setAdminProjectActive,
@@ -21,8 +23,10 @@ const pageSizeOptions = [10, 20, 50];
 export function AdminProjectsPageClient() {
   const router = useRouter();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [draggedProjectId, setDraggedProjectId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [page, setPage] = useState(1);
@@ -58,6 +62,26 @@ export function AdminProjectsPageClient() {
   async function toggleProject(project: Project) {
     await setAdminProjectActive(project.id, !project.isActive);
     await loadProjects();
+  }
+
+  async function deleteProject() {
+    if (!deleteTarget || isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setErrorMessage("");
+
+    try {
+      await deleteAdminProject(deleteTarget.id);
+      setProjects((current) => current.filter((project) => project.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (error) {
+      console.warn("Could not delete project.", error);
+      setErrorMessage("No se pudo eliminar el proyecto.");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   async function handleDrop(targetProjectId: string) {
@@ -135,6 +159,17 @@ export function AdminProjectsPageClient() {
 
   return (
     <AdminShell>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Eliminar proyecto"
+        description="Esta accion eliminara permanentemente el proyecto y sus imagenes asociadas. No se podra recuperar. ¿Quieres continuar?"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        isLoading={isDeleting}
+        variant="danger"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteProject}
+      />
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="section-label">Admin / Proyectos</p>
@@ -188,7 +223,7 @@ export function AdminProjectsPageClient() {
                     <th className="w-32 px-5 py-4">Estado</th>
                     <th className="w-28 px-5 py-4 text-center">Destacado</th>
                     <th className="px-5 py-4">Categorías</th>
-                    <th className="w-40 px-5 py-4 text-right">Acciones</th>
+                    <th className="w-52 px-5 py-4 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
@@ -272,6 +307,12 @@ export function AdminProjectsPageClient() {
                               icon={project.isActive ? <EyeOffIcon /> : <EyeIcon />}
                               onClick={() => toggleProject(project)}
                             />
+                            <IconButton
+                              danger
+                              label="Eliminar"
+                              icon={<TrashIcon />}
+                              onClick={() => setDeleteTarget(project)}
+                            />
                           </div>
                         </td>
                       </tr>
@@ -334,10 +375,12 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
 }
 
 function IconButton({
+  danger,
   icon,
   label,
   onClick,
 }: {
+  danger?: boolean;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
@@ -346,7 +389,11 @@ function IconButton({
     <span className="group relative">
       <button
         type="button"
-        className="flex h-10 w-10 cursor-pointer items-center justify-center border border-neutral-200 text-neutral-500 transition hover:border-neutral-950 hover:text-neutral-950"
+        className={`flex h-10 w-10 cursor-pointer items-center justify-center border transition ${
+          danger
+            ? "border-red-200 text-red-700 hover:border-red-700"
+            : "border-neutral-200 text-neutral-500 hover:border-neutral-950 hover:text-neutral-950"
+        }`}
         aria-label={label}
         onClick={onClick}
       >
@@ -444,6 +491,14 @@ function EyeOffIcon() {
     <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
       <path d="m4 4 16 16" stroke="currentColor" strokeWidth="1.6" />
       <path d="M9.8 6.9A8.8 8.8 0 0 1 12 6.5c5.5 0 8.5 5.5 8.5 5.5a15 15 0 0 1-2.2 2.9M6.7 8.5A15 15 0 0 0 3.5 12s3 5.5 8.5 5.5c1 0 1.9-.2 2.7-.5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path d="M5 7h14M10 11v6M14 11v6M8 7l.5-2h7L16 7M7 7l1 13h8l1-13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
     </svg>
   );
 }

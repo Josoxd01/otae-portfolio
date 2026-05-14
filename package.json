@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed:firestore": "tsx scripts/seedFirestore.ts"
+    "seed:firestore": "tsx scripts/seedFirestore.ts",
+    "seed:blogs": "tsx scripts/seedFirestore.ts --only=blogs"
   },
   "dependencies": {
     "firebase": "^12.12.1",

@@ -7,9 +7,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { DragEvent, MouseEvent } from "react";
 
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
+  deleteAdminCategory,
   getAdminCategories,
+  getAdminCategoryUsage,
+  hideAdminCategory,
   setAdminCategoryActive,
   updateAdminCategorySortOrders,
 } from "@/lib/admin/portfolio-admin";
@@ -17,11 +21,18 @@ import type { ProjectCategory } from "@/types/portfolio";
 
 const pageSizeOptions = [10, 20, 50];
 
+interface CategoryDeleteAction {
+  category: ProjectCategory;
+  mode: "delete" | "hide";
+}
+
 export function AdminCategoriesPageClient() {
   const router = useRouter();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
+  const [deleteAction, setDeleteAction] = useState<CategoryDeleteAction | null>(null);
   const [draggedCategoryId, setDraggedCategoryId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [page, setPage] = useState(1);
@@ -47,6 +58,55 @@ export function AdminCategoriesPageClient() {
   async function toggleCategory(category: ProjectCategory) {
     await setAdminCategoryActive(category.id, !category.isActive);
     await loadCategories();
+  }
+
+  async function prepareDeleteCategory(category: ProjectCategory) {
+    setErrorMessage("");
+
+    try {
+      const usage = await getAdminCategoryUsage(category.id);
+      const hasRelations = usage.projectCount > 0 || usage.blogCount > 0;
+
+      setDeleteAction({
+        category,
+        mode: hasRelations ? "hide" : "delete",
+      });
+    } catch (error) {
+      console.warn("Could not check category usage.", error);
+      setErrorMessage("No se pudo validar si la categoria tiene relaciones.");
+    }
+  }
+
+  async function deleteCategory() {
+    if (!deleteAction || isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setErrorMessage("");
+
+    try {
+      if (deleteAction.mode === "hide") {
+        await hideAdminCategory(deleteAction.category.id);
+        setCategories((current) =>
+          current.map((category) =>
+            category.id === deleteAction.category.id ? { ...category, isActive: false } : category,
+          ),
+        );
+      } else {
+        await deleteAdminCategory(deleteAction.category.id);
+        setCategories((current) =>
+          current.filter((category) => category.id !== deleteAction.category.id),
+        );
+      }
+
+      setDeleteAction(null);
+    } catch (error) {
+      console.warn("Could not delete category.", error);
+      setErrorMessage("No se pudo eliminar la categoria.");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   async function handleDrop(targetCategoryId: string) {
@@ -124,6 +184,21 @@ export function AdminCategoriesPageClient() {
 
   return (
     <AdminShell>
+      <ConfirmDialog
+        open={Boolean(deleteAction)}
+        title={deleteAction?.mode === "hide" ? "Ocultar categoria" : "Eliminar categoria"}
+        description={
+          deleteAction?.mode === "hide"
+            ? "Esta categoria tiene proyectos o blogs relacionados. Por seguridad no se eliminara; solo se ocultara del sitio publico. ¿Quieres continuar?"
+            : "Esta accion eliminara permanentemente la categoria. No se podra recuperar. ¿Quieres continuar?"
+        }
+        confirmLabel={deleteAction?.mode === "hide" ? "Ocultar" : "Eliminar"}
+        cancelLabel="Cancelar"
+        isLoading={isDeleting}
+        variant="danger"
+        onCancel={() => setDeleteAction(null)}
+        onConfirm={deleteCategory}
+      />
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="section-label">Admin / Categorías</p>
@@ -175,7 +250,7 @@ export function AdminCategoriesPageClient() {
                     <th className="w-24 px-5 py-4">Orden</th>
                     <th className="px-5 py-4">Nombre</th>
                     <th className="w-36 px-5 py-4">Estado</th>
-                    <th className="w-32 px-5 py-4 text-right">Acciones</th>
+                    <th className="w-44 px-5 py-4 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
@@ -231,6 +306,12 @@ export function AdminCategoriesPageClient() {
                               label={category.isActive ? "Desactivar" : "Activar"}
                               icon={category.isActive ? <EyeOffIcon /> : <EyeIcon />}
                               onClick={() => toggleCategory(category)}
+                            />
+                            <IconButton
+                              danger
+                              label="Eliminar"
+                              icon={<TrashIcon />}
+                              onClick={() => prepareDeleteCategory(category)}
                             />
                           </div>
                         </td>
@@ -294,10 +375,12 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
 }
 
 function IconButton({
+  danger,
   icon,
   label,
   onClick,
 }: {
+  danger?: boolean;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
@@ -306,7 +389,11 @@ function IconButton({
     <span className="group relative">
       <button
         type="button"
-        className="flex h-10 w-10 cursor-pointer items-center justify-center border border-neutral-200 text-neutral-500 transition hover:border-neutral-950 hover:text-neutral-950"
+        className={`flex h-10 w-10 cursor-pointer items-center justify-center border transition ${
+          danger
+            ? "border-red-200 text-red-700 hover:border-red-700"
+            : "border-neutral-200 text-neutral-500 hover:border-neutral-950 hover:text-neutral-950"
+        }`}
         aria-label={label}
         onClick={onClick}
       >
@@ -384,6 +471,14 @@ function EyeOffIcon() {
     <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
       <path d="m4 4 16 16" stroke="currentColor" strokeWidth="1.6" />
       <path d="M9.8 6.9A8.8 8.8 0 0 1 12 6.5c5.5 0 8.5 5.5 8.5 5.5a15 15 0 0 1-2.2 2.9M6.7 8.5A15 15 0 0 0 3.5 12s3 5.5 8.5 5.5c1 0 1.9-.2 2.7-.5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path d="M5 7h14M10 11v6M14 11v6M8 7l.5-2h7L16 7M7 7l1 13h8l1-13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
     </svg>
   );
 }

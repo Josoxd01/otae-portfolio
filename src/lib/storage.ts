@@ -60,6 +60,12 @@ export async function uploadTeamMemberPhoto(memberId: string, file: File) {
   return uploadFile(`team-media/${memberId}/photo/${Date.now()}-${safeFileName(file.name)}`, file);
 }
 
+export async function uploadBlogCoverMedia(blogId: string, file: File) {
+  validateProjectCoverFile(file);
+
+  return uploadFile(`blog-media/${blogId}/cover/${Date.now()}-${safeFileName(file.name)}`, file);
+}
+
 export async function deleteStorageFile(storagePath: string) {
   await deleteObject(ref(storage, storagePath));
 }

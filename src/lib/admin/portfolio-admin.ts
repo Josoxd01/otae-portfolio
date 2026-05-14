@@ -4,15 +4,27 @@ import {
   doc,
   getDoc,
   getDocs,
+  query,
   setDoc,
   updateDoc,
+  where,
   writeBatch,
   collection,
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
+import {
+  createBlog,
+  hideBlog,
+  publishBlog,
+  updateBlog,
+  updateBlogStatus,
+} from "@/lib/firestore/blogs";
 import { removeUndefinedValues, sortBySortOrder, sortProjects } from "@/lib/portfolio-helpers";
+import { deleteStorageFile } from "@/lib/storage";
 import type {
+  Blog,
+  BlogStatus,
   Project,
   ProjectCategory,
   ProjectMedia,
@@ -22,6 +34,66 @@ import type {
 
 function withId<T extends { id: string }>(id: string, data: T) {
   return { ...data, id };
+}
+
+export async function getAdminBlogs() {
+  const snapshot = await getDocs(collection(db, "blogs"));
+
+  return sortBlogsByDate(
+    snapshot.docs.map((item) => withId(item.id, item.data() as Blog)),
+  );
+}
+
+export async function getAdminBlog(blogId: string) {
+  const snapshot = await getDoc(doc(db, "blogs", blogId));
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return withId(snapshot.id, snapshot.data() as Blog);
+}
+
+export async function saveAdminBlog(blog: Blog) {
+  const existingBlog = blog.id ? await getAdminBlog(blog.id) : null;
+
+  if (existingBlog) {
+    await updateBlog(blog.id, blog);
+    return;
+  }
+
+  await createBlog(blog);
+}
+
+export async function setAdminBlogStatus(blogId: string, status: BlogStatus) {
+  await updateBlogStatus(blogId, status);
+}
+
+export async function publishAdminBlog(blogId: string) {
+  await publishBlog(blogId);
+}
+
+export async function hideAdminBlog(blogId: string) {
+  await hideBlog(blogId);
+}
+
+export async function deleteAdminBlog(blogId: string) {
+  const blog = await getAdminBlog(blogId);
+
+  if (blog?.coverMedia?.storagePath) {
+    await deleteStoragePaths([blog.coverMedia.storagePath]);
+  }
+
+  await deleteDoc(doc(db, "blogs", blogId));
+}
+
+function sortBlogsByDate(items: Blog[]) {
+  return [...items].sort((firstBlog, secondBlog) => {
+    const firstDate = firstBlog.publishedAt ?? firstBlog.createdAt ?? "";
+    const secondDate = secondBlog.publishedAt ?? secondBlog.createdAt ?? "";
+
+    return secondDate.localeCompare(firstDate);
+  });
 }
 
 export async function getAdminProjects() {
@@ -62,6 +134,28 @@ export async function setAdminProjectActive(projectId: string, isActive: boolean
     isActive,
     updatedAt: new Date().toISOString(),
   });
+}
+
+export async function hideAdminProject(projectId: string) {
+  await setAdminProjectActive(projectId, false);
+}
+
+export async function deleteAdminProject(projectId: string) {
+  const project = await getAdminProject(projectId);
+  const media = await getAdminProjectMedia(projectId);
+  const storagePaths = [
+    project?.coverMedia?.storagePath,
+    ...media.map((item) => item.storagePath),
+  ].filter((path): path is string => Boolean(path));
+
+  await deleteStoragePaths(storagePaths);
+
+  const batch = writeBatch(db);
+  media.forEach((item) => {
+    batch.delete(doc(db, "projects", projectId, "media", item.id));
+  });
+  batch.delete(doc(db, "projects", projectId));
+  await batch.commit();
 }
 
 export async function updateAdminProjectSortOrders(projects: Array<Pick<Project, "id" | "sortOrder">>) {
@@ -185,6 +279,40 @@ export async function setAdminCategoryActive(categoryId: string, isActive: boole
   });
 }
 
+export async function hideAdminCategory(categoryId: string) {
+  await setAdminCategoryActive(categoryId, false);
+}
+
+export interface CategoryUsage {
+  blogCount: number;
+  projectCount: number;
+}
+
+export async function getAdminCategoryUsage(categoryId: string): Promise<CategoryUsage> {
+  const [
+    projectsByCategory,
+    projectsByPrimaryCategory,
+    blogsByCategory,
+  ] = await Promise.all([
+    getDocs(query(collection(db, "projects"), where("categoryIds", "array-contains", categoryId))),
+    getDocs(query(collection(db, "projects"), where("primaryCategoryId", "==", categoryId))),
+    getDocs(query(collection(db, "blogs"), where("categoryIds", "array-contains", categoryId))),
+  ]);
+
+  const projectIds = new Set<string>();
+  projectsByCategory.docs.forEach((item) => projectIds.add(item.id));
+  projectsByPrimaryCategory.docs.forEach((item) => projectIds.add(item.id));
+
+  return {
+    blogCount: blogsByCategory.size,
+    projectCount: projectIds.size,
+  };
+}
+
+export async function deleteAdminCategory(categoryId: string) {
+  await deleteDoc(doc(db, "project_categories", categoryId));
+}
+
 export async function getAdminStudioProfile() {
   const snapshot = await getDoc(doc(db, "studio_profile", "main"));
 
@@ -252,4 +380,18 @@ export async function deleteAdminTeamMember(memberId: string) {
 
 export async function setAdminTeamMemberActive(memberId: string, isActive: boolean) {
   await updateDoc(doc(db, "team_members", memberId), { isActive });
+}
+
+async function deleteStoragePaths(paths: string[]) {
+  const uniquePaths = Array.from(new Set(paths));
+
+  const results = await Promise.allSettled(
+    uniquePaths.map((path) => deleteStorageFile(path)),
+  );
+
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.warn(`Could not delete storage file "${uniquePaths[index]}".`, result.reason);
+    }
+  });
 }

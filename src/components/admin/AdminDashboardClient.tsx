@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Building2,
   FolderKanban,
+  Newspaper,
   Tags,
   UsersRound,
 } from "lucide-react";
@@ -13,12 +14,13 @@ import { useEffect, useState } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
+  getAdminBlogs,
   getAdminCategories,
   getAdminProjects,
   getAdminTeamMembers,
 } from "@/lib/admin/portfolio-admin";
 
-type CountKey = "categories" | "projects" | "team";
+type CountKey = "blogs" | "categories" | "projects" | "team";
 
 interface DashboardModule {
   countKey?: CountKey;
@@ -47,6 +49,14 @@ const modules: DashboardModule[] = [
     title: "Categorias",
   },
   {
+    countKey: "blogs",
+    description: "Publicaciones editoriales, estados, portadas y categorias relacionadas.",
+    href: "/admin/blogs",
+    icon: Newspaper,
+    meta: "blogs",
+    title: "Blogs",
+  },
+  {
     description: "Textos, imagenes institucionales y datos generales del estudio.",
     href: "/admin/studio",
     icon: Building2,
@@ -64,6 +74,7 @@ const modules: DashboardModule[] = [
 ];
 
 interface DashboardCounts {
+  blogs?: number;
   categories?: number;
   projects?: number;
   team?: number;
@@ -86,9 +97,10 @@ function DashboardContent() {
 
     async function loadCounts() {
       try {
-        const [projects, categories, teamMembers] = await Promise.all([
+        const [projects, categories, blogs, teamMembers] = await Promise.all([
           getAdminProjects(),
           getAdminCategories(),
+          getAdminBlogs(),
           getAdminTeamMembers(),
         ]);
 
@@ -97,6 +109,7 @@ function DashboardContent() {
         }
 
         setCounts({
+          blogs: blogs.length,
           categories: categories.length,
           projects: projects.length,
           team: teamMembers.length,

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, DragEvent, FormEvent, MouseEvent } from "react";
 
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   createAdminProjectMedia,
@@ -17,7 +18,7 @@ import {
   updateAdminProjectMediaSortOrders,
 } from "@/lib/admin/portfolio-admin";
 import { slugify } from "@/lib/portfolio-helpers";
-import { deleteStorageFile, uploadProjectCoverMedia, uploadProjectMedia } from "@/lib/storage";
+import { uploadProjectCoverMedia, uploadProjectMedia } from "@/lib/storage";
 import type {
   Project,
   ProjectCategory,
@@ -54,11 +55,17 @@ interface MediaFormState {
   title: string;
 }
 
+interface PendingMediaDelete {
+  media: ProjectMedia;
+  role: EditableMediaRole;
+}
+
 export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [coverUploadMessage, setCoverUploadMessage] = useState("");
   const [deletingMediaId, setDeletingMediaId] = useState("");
+  const [deleteMediaTarget, setDeleteMediaTarget] = useState<PendingMediaDelete | null>(null);
   const [draggedMediaId, setDraggedMediaId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [form, setForm] = useState<Project>(() => createEmptyProject());
@@ -293,27 +300,17 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
     }
   }
 
-  async function handleDeleteMedia(media: ProjectMedia, role: EditableMediaRole) {
-    if (!currentProjectId || deletingMediaId) {
+  async function handleDeleteMedia() {
+    if (!currentProjectId || !deleteMediaTarget || deletingMediaId) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "¿Seguro que quieres eliminar este archivo? Esta acción no se puede deshacer.",
-    );
-
-    if (!confirmed) {
-      return;
-    }
+    const { media, role } = deleteMediaTarget;
 
     setDeletingMediaId(media.id);
     setMediaErrorMessage("");
 
     try {
-      if (media.storagePath) {
-        await deleteStorageFile(media.storagePath);
-      }
-
       await deleteAdminProjectMedia(currentProjectId, media.id);
 
       const remainingRoleMedia = sortMediaByOrder(
@@ -335,6 +332,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
           sortOrder: item.sortOrder,
         })),
       );
+      setDeleteMediaTarget(null);
     } catch (error) {
       console.warn("Could not delete project media.", error);
       setMediaErrorMessage(
@@ -391,6 +389,17 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
 
   return (
     <AdminShell>
+      <ConfirmDialog
+        open={Boolean(deleteMediaTarget)}
+        title="Eliminar archivo"
+        description="Esta accion quitara el archivo del proyecto. El archivo original en Storage no se eliminara en esta operacion."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        isLoading={Boolean(deletingMediaId)}
+        variant="danger"
+        onCancel={() => setDeleteMediaTarget(null)}
+        onConfirm={handleDeleteMedia}
+      />
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -543,7 +552,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                   isSavingOrder={isSavingMediaOrder === "gallery"}
                   isUploading={uploadingRole === "gallery"}
                   media={galleryMedia}
-                  onDeleteMedia={(media) => handleDeleteMedia(media, "gallery")}
+                  onDeleteMedia={(media) => setDeleteMediaTarget({ media, role: "gallery" })}
                   onFileChange={(event) => handleMediaUpload(event, "gallery")}
                   onFormChange={(patch) => patchMediaForm("gallery", patch)}
                   onMediaActionClick={handleMediaActionClick}
@@ -564,7 +573,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                   isSavingOrder={isSavingMediaOrder === "plan"}
                   isUploading={uploadingRole === "plan"}
                   media={planMedia}
-                  onDeleteMedia={(media) => handleDeleteMedia(media, "plan")}
+                  onDeleteMedia={(media) => setDeleteMediaTarget({ media, role: "plan" })}
                   onFileChange={(event) => handleMediaUpload(event, "plan")}
                   onFormChange={(patch) => patchMediaForm("plan", patch)}
                   onMediaActionClick={handleMediaActionClick}
