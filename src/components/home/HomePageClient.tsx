@@ -3,6 +3,7 @@
 import { AboutSection } from "@/components/home/AboutSection";
 import { ContactCTASection } from "@/components/home/ContactCTASection";
 import { FeaturedProjectsCarousel } from "@/components/home/FeaturedProjectsCarousel";
+import { LatestBlogSection } from "@/components/home/LatestBlogSection";
 import { SpecializationAreasSection } from "@/components/home/SpecializationAreasSection";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
@@ -20,6 +21,7 @@ export function HomePageClient({ initialData }: HomePageClientProps) {
       <main className="min-h-screen bg-white text-neutral-950">
         <FeaturedProjectsCarousel projects={homeData.featuredProjects} categories={homeData.projectCategories} />
         <SpecializationAreasSection categories={homeData.projectCategories} projects={homeData.activeProjects} />
+        <LatestBlogSection />
         <AboutSection studioProfile={homeData.studioProfile} />
         <ContactCTASection contactChannels={homeData.contactChannels} />
       </main>

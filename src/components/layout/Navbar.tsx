@@ -9,6 +9,7 @@ import { otaeLogoMedia } from "@/components/layout/brand";
 const navItems = [
   { label: "Proyectos", href: "/proyectos" },
   { label: "Estudio", href: "/estudio" },
+  { label: "Blogs", href: "/blog" },
   { label: "Contacto", href: "/contacto" },
 ];
 

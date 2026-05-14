@@ -13,7 +13,7 @@ export function ContactCTASection({ contactChannels }: ContactCTASectionProps) {
 
   return (
     <section id="contacto" className="bg-white px-0 py-14 sm:px-6 lg:px-0">
-      <div className="bg-neutral-950 px-6 py-16 text-center text-white sm:px-8 lg:px-12 lg:py-20">
+      <div className="bg-neutral-800 px-6 py-16 text-center text-white sm:px-8 lg:px-12 lg:py-20">
         <div className="mx-auto max-w-3xl">
           <h2 className="font-title text-3xl font-medium leading-tight sm:text-4xl lg:text-5xl">
             ¿Tienes un proyecto en mente?

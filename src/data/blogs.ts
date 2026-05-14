@@ -1,0 +1,103 @@
+import type { Blog } from "@/types/portfolio";
+
+export const blogs: Blog[] = [
+  {
+    id: "blog_005",
+    title: "Vivienda compacta y luz natural",
+    slug: "vivienda-compacta-luz-natural",
+    subtitle: "Estrategias para ampliar la percepcion espacial sin aumentar superficie.",
+    content:
+      "La vivienda compacta exige decisiones precisas sobre luz, almacenamiento y continuidad visual. Un proyecto pequeno puede sentirse generoso cuando cada transicion y cada apertura cumplen una funcion espacial clara.",
+    coverMedia: {
+      id: "blog_005_cover",
+      url: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1600&q=80",
+      assetType: "image",
+      altText: "Interior residencial contemporaneo con luz natural.",
+      title: "Vivienda compacta con luz natural",
+    },
+    categoryIds: ["residencial", "interiores"],
+    status: "published",
+    publishedAt: "2026-05-06",
+    createdAt: "2026-04-28",
+    updatedAt: "2026-05-06",
+  },
+  {
+    id: "blog_001",
+    title: "La obra como proceso de diseno",
+    slug: "obra-como-proceso-de-diseno",
+    subtitle: "Notas sobre decisiones tecnicas que tambien construyen atmosfera.",
+    content:
+      "Una obra no es solo la ejecucion de un plano. Es un proceso donde las decisiones tecnicas, los oficios y la lectura del sitio terminan afinando el proyecto.",
+    coverMedia: {
+      id: "blog_001_cover",
+      url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1600&q=80",
+      assetType: "image",
+      altText: "Planos arquitectonicos sobre una mesa de trabajo.",
+      title: "Proceso de diseno en obra",
+    },
+    categoryIds: ["docencia", "edificios"],
+    status: "published",
+    publishedAt: "2026-04-18",
+    createdAt: "2026-04-12",
+    updatedAt: "2026-04-18",
+  },
+  {
+    id: "blog_002",
+    title: "Materialidad sobria para espacios interiores",
+    slug: "materialidad-sobria-espacios-interiores",
+    subtitle: "Criterios para seleccionar materiales desde uso, mantenimiento y luz.",
+    content:
+      "La seleccion de materiales en interiores debe equilibrar tactilidad, durabilidad y claridad visual. La sobriedad permite que el espacio respire y envejezca mejor.",
+    coverMedia: {
+      id: "blog_002_cover",
+      url: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1600&q=80",
+      assetType: "image",
+      altText: "Interior contemporaneo con luz natural y materiales calidos.",
+      title: "Materialidad interior",
+    },
+    categoryIds: ["interiores", "residencial"],
+    status: "published",
+    publishedAt: "2026-03-29",
+    createdAt: "2026-03-22",
+    updatedAt: "2026-03-29",
+  },
+  {
+    id: "blog_003",
+    title: "Escala urbana y pequenas intervenciones",
+    slug: "escala-urbana-pequenas-intervenciones",
+    subtitle: "Como los gestos precisos pueden activar recorridos y encuentros.",
+    content:
+      "En la ciudad, una intervencion pequena puede cambiar la manera en que se usa una esquina, una fachada o un umbral. La escala urbana tambien se trabaja desde lo cotidiano.",
+    coverMedia: {
+      id: "blog_003_cover",
+      url: "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&w=1600&q=80",
+      assetType: "image",
+      altText: "Fachadas urbanas contemporaneas con profundidad.",
+      title: "Intervencion urbana",
+    },
+    categoryIds: ["urbano", "comercial"],
+    status: "published",
+    publishedAt: "2026-02-14",
+    createdAt: "2026-02-08",
+    updatedAt: "2026-02-14",
+  },
+  {
+    id: "blog_004",
+    title: "Consultorios y experiencia del paciente",
+    slug: "consultorios-experiencia-paciente",
+    subtitle: "Apuntes preliminares sobre flujos, privacidad y calma espacial.",
+    content:
+      "Los espacios de salud requieren precision funcional, pero tambien una lectura sensible de espera, recorrido, privacidad y orientacion. Este texto esta en preparacion.",
+    coverMedia: {
+      id: "blog_004_cover",
+      url: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1600&q=80",
+      assetType: "image",
+      altText: "Espacio de atencion medica limpio y luminoso.",
+      title: "Consultorios y experiencia",
+    },
+    categoryIds: ["consultorios", "interiores"],
+    status: "draft",
+    createdAt: "2026-01-20",
+    updatedAt: "2026-01-24",
+  },
+];
