@@ -8,7 +8,7 @@ import { useToast } from "@/components/admin/AdminToastProvider";
 import { otaeLogoMedia } from "@/components/layout/brand";
 import { getAdminStudioProfile, saveAdminStudioProfile } from "@/lib/admin/portfolio-admin";
 import { uploadStudioMedia } from "@/lib/storage";
-import type { MediaReference, StudioProfile } from "@/types/portfolio";
+import type { MediaReference, OpeningHour, StudioProfile } from "@/types/portfolio";
 
 type StudioMediaField = "heroImage" | "aboutImage";
 
@@ -61,7 +61,7 @@ export function AdminStudioPageClient() {
     setIsSaving(true);
 
     try {
-      await saveAdminStudioProfile({ ...studioProfile, logoMedia: undefined });
+      await saveAdminStudioProfile(normalizeStudioProfile(studioProfile));
       setUploadMessage("Perfil del estudio guardado.");
       toast.success("Estudio actualizado.");
     } catch (error) {
@@ -123,6 +123,33 @@ export function AdminStudioPageClient() {
     updateField("aboutParagraphs", paragraphs);
   }
 
+  function updateOpeningHour(index: number, patch: Partial<OpeningHour>) {
+    setStudioProfile((current) => {
+      const openingHours = [...(current.openingHours ?? [])];
+      openingHours[index] = {
+        label: openingHours[index]?.label ?? "",
+        value: openingHours[index]?.value ?? "",
+        ...patch,
+      };
+
+      return { ...current, openingHours };
+    });
+  }
+
+  function addOpeningHour() {
+    setStudioProfile((current) => ({
+      ...current,
+      openingHours: [...(current.openingHours ?? []), { label: "", value: "" }],
+    }));
+  }
+
+  function removeOpeningHour(index: number) {
+    setStudioProfile((current) => ({
+      ...current,
+      openingHours: (current.openingHours ?? []).filter((_, itemIndex) => itemIndex !== index),
+    }));
+  }
+
   return (
     <AdminShell>
       <form onSubmit={handleSubmit}>
@@ -163,7 +190,7 @@ export function AdminStudioPageClient() {
           <div className="mt-10 space-y-8">
             <section className="border border-neutral-200 bg-white p-7">
               <SectionHeading
-                label="Identidad editorial"
+                label="Identidad / textos"
                 title="Contenido general"
                 description="Textos base que aparecen en la home, footer y página del estudio."
               />
@@ -212,6 +239,86 @@ export function AdminStudioPageClient() {
                   onChange={updateAboutParagraphs}
                 />
               </div>
+            </section>
+
+            <section className="border border-neutral-200 bg-white p-7">
+              <SectionHeading
+                label="Contacto"
+                title="Canales de contacto"
+                description="Datos visibles en la pagina de contacto y accesos directos del sitio publico."
+              />
+              <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                <TextField label="Email" value={studioProfile.email ?? ""} onChange={(value) => updateField("email", value)} />
+                <TextField label="Telefono" value={studioProfile.phone ?? ""} onChange={(value) => updateField("phone", value)} />
+                <TextField label="WhatsApp number" value={studioProfile.whatsappNumber ?? ""} onChange={(value) => updateField("whatsappNumber", value)} />
+                <TextField label="WhatsApp URL" value={studioProfile.whatsappUrl ?? ""} onChange={(value) => updateField("whatsappUrl", value)} />
+                <TextField label="Instagram handle" value={studioProfile.instagramHandle ?? ""} onChange={(value) => updateField("instagramHandle", value)} />
+                <TextField label="Instagram URL" value={studioProfile.instagramUrl ?? ""} onChange={(value) => updateField("instagramUrl", value)} />
+                <TextField className="lg:col-span-2" label="LinkedIn URL" value={studioProfile.linkedinUrl ?? ""} onChange={(value) => updateField("linkedinUrl", value)} />
+              </div>
+            </section>
+
+            <section className="border border-neutral-200 bg-white p-7">
+              <SectionHeading
+                label="Ubicacion"
+                title="Direccion y mapa"
+                description="Informacion de ubicacion que se muestra en /contacto."
+              />
+              <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                <TextField label="Direccion" value={studioProfile.address ?? ""} onChange={(value) => updateField("address", value)} />
+                <TextField label="Ciudad" value={studioProfile.city ?? ""} onChange={(value) => updateField("city", value)} />
+                <TextField label="Pais" value={studioProfile.country ?? ""} onChange={(value) => updateField("country", value)} />
+                <TextField label="Ubicacion / location" value={studioProfile.location ?? ""} onChange={(value) => updateField("location", value)} />
+                <TextField label="Location label" value={studioProfile.locationLabel ?? ""} onChange={(value) => updateField("locationLabel", value)} />
+                <TextField label="Map URL" value={studioProfile.mapUrl ?? ""} onChange={(value) => updateField("mapUrl", value)} />
+              </div>
+            </section>
+
+            <section className="border border-neutral-200 bg-white p-7">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                <SectionHeading
+                  label="Horarios"
+                  title="Horarios de atencion"
+                  description="Agrega, edita o elimina las filas que aparecen en la pagina de contacto."
+                />
+                <button
+                  type="button"
+                  className="inline-flex cursor-pointer items-center justify-center border border-neutral-300 px-5 py-3 text-sm font-semibold transition hover:border-neutral-950"
+                  onClick={addOpeningHour}
+                >
+                  Agregar fila
+                </button>
+              </div>
+
+              <div className="mt-8 space-y-4">
+                {(studioProfile.openingHours ?? []).length > 0 ? (
+                  studioProfile.openingHours?.map((item, index) => (
+                    <div key={`${item.label}-${index}`} className="grid gap-4 border border-neutral-200 p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+                      <TextField label="Label" value={item.label} onChange={(value) => updateOpeningHour(index, { label: value })} />
+                      <TextField label="Value" value={item.value} onChange={(value) => updateOpeningHour(index, { value })} />
+                      <button
+                        type="button"
+                        className="inline-flex cursor-pointer items-center justify-center border border-red-200 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-700"
+                        onClick={() => removeOpeningHour(index)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-500">
+                    Todavia no hay horarios configurados.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <SectionHeading
+                label="Imagenes institucionales"
+                title="Recursos visuales"
+                description="El logotipo principal se mantiene como recurso fijo. Las imagenes institucionales si pueden actualizarse."
+              />
             </section>
 
             <section className="grid gap-6 lg:grid-cols-2">
@@ -278,6 +385,18 @@ function LogoReadOnlyCard() {
   );
 }
 
+function normalizeStudioProfile(studioProfile: StudioProfile): StudioProfile {
+  return {
+    ...studioProfile,
+    openingHours: (studioProfile.openingHours ?? [])
+      .map((item) => ({
+        label: item.label.trim(),
+        value: item.value.trim(),
+      }))
+      .filter((item) => item.label || item.value),
+  };
+}
+
 function MediaCard({
   disabled,
   isUploading,
@@ -332,9 +451,19 @@ function MediaCard({
   );
 }
 
-function TextField({ label, onChange, value }: { label: string; onChange: (value: string) => void; value: string }) {
+function TextField({
+  className = "",
+  label,
+  onChange,
+  value,
+}: {
+  className?: string;
+  label: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
   return (
-    <label className="block">
+    <label className={`block ${className}`}>
       <FieldLabel>{label}</FieldLabel>
       <input className="mt-3 w-full border border-neutral-300 px-4 py-3 text-sm focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950" value={value} onChange={(event) => onChange(event.target.value)} />
     </label>

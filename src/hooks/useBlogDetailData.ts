@@ -19,8 +19,8 @@ export function useBlogDetailData(slug: string, initialBlog: Blog) {
       }
 
       try {
-        const { getBlogBySlug } = await import("@/lib/firestore/blogs");
-        const firestoreBlog = await getBlogBySlug(slug);
+        const { getBlogBySlugFromFirestore } = await import("@/lib/firestore/blogs");
+        const firestoreBlog = await getBlogBySlugFromFirestore(slug);
 
         if (isMounted) {
           if (firestoreBlog) {

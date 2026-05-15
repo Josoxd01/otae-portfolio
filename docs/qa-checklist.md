@@ -34,7 +34,7 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 - [x] Seccion `Ultimo blog` aparece debajo de Areas de especializacion.
 - [x] Ultimo blog toma el blog publicado mas reciente.
 - [x] Imagen del ultimo blog es clickeable. 
-- [x] Link `Leer mas` del ultimo blog abre `/blog/[slug]`.<!-- ojoo -->
+- [x] Link `Leer mas` del ultimo blog abre `/blog/[slug]`.
 - [x] Fondo oscuro del ultimo blog coincide con el esquema definido.
 - [x] Seccion `Acerca de OTAE` sigue apareciendo debajo del blog.
 - [x] CTA `Tienes un proyecto en mente` usa el mismo negro profesional definido.
@@ -48,127 +48,127 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 - [x] Filtros por categoria funcionan.
 - [x] Paginacion funciona.
 - [x] Imagenes de proyectos cargan correctamente.
-- [ ] Proyecto sin portada no rompe el layout.
-- [ ] Proyecto nuevo creado desde admin aparece si `isActive` es `true`.
+- [x] Proyecto sin portada no rompe el layout.
+- [x] Proyecto nuevo creado desde admin aparece si `isActive` es `true`.
 
 ## Proyectos - detalle
 
-- [ ] Proyecto antiguo/mock abre por `/proyectos/[slug]`.
-- [ ] Proyecto nuevo de Firestore abre por `/proyectos/pruebinia` sin 404.
-- [ ] Si Firestore falla en servidor, la pagina no queda bloqueada antes del cliente.
-- [ ] Proyecto inactivo no se muestra como publico.
-- [ ] Slug inexistente devuelve 404 o estado no encontrado segun corresponda.
-- [ ] Portada se muestra si existe.
-- [ ] Si no hay portada, aparece fallback visual y no rompe.
-- [ ] Descripcion, ubicacion, anio y area se muestran cuando existen.
-- [ ] Galeria visible se muestra.
-- [ ] Planos/PDF visibles se muestran.
-- [ ] Media oculta no aparece en publico.
-- [ ] Link `Volver a proyectos` funciona.
+- [x] Proyecto antiguo/mock abre por `/proyectos/[slug]`.
+- [x] Proyecto nuevo de Firestore abre por `/proyectos/pruebinia` sin 404.
+- [] Si Firestore falla en servidor, la pagina no queda bloqueada antes del cliente. <!-- mmm creo -->
+- [x] Proyecto inactivo no se muestra como publico.
+- [x] Slug inexistente devuelve 404 o estado no encontrado segun corresponda.
+- [x] Portada se muestra si existe.
+- [x] Si no hay portada, aparece fallback visual y no rompe.
+- [x] Descripcion, ubicacion, anio y area se muestran cuando existen.
+- [x] Galeria visible se muestra.
+- [x] Planos/PDF visibles se muestran.
+- [x] Media oculta no aparece en publico.<!-- Ojo   -->
+- [x] Link `Volver a proyectos` funciona.
 
 ## Estudio
 
-- [ ] `/estudio` carga sin errores.
-- [ ] Perfil del estudio carga desde Firestore cuando esta disponible.
-- [ ] Si Firestore falla, se conserva fallback local.
-- [ ] Hero/imagen institucional carga.
-- [ ] Texto de historia, mision, vision o contenido equivalente aparece.
-- [ ] Equipo activo se muestra.
-- [ ] Miembros inactivos no aparecen.
-- [ ] Datos de contacto del estudio siguen visibles donde corresponde.
-- [ ] Logo del navbar no depende de `studioProfile.logoMedia`.
+- [x] `/estudio` carga sin errores.
+- [x] Perfil del estudio carga desde Firestore cuando esta disponible.
+- [ ] Si Firestore falla, se conserva fallback local.<!-- ahh? -->
+- [x] Hero/imagen institucional carga.
+- [x] Texto de historia, mision, vision o contenido equivalente aparece.
+- [x] Equipo activo se muestra.
+- [x] Miembros inactivos no aparecen.
+- [x] Datos de contacto del estudio siguen visibles donde corresponde.
+- [x] Logo del navbar no depende de `studioProfile.logoMedia`.
 
 ## Contacto
 
-- [ ] `/contacto` carga sin errores.
-- [ ] Email, telefono, WhatsApp, redes, ubicacion u horarios se muestran si existen.
-- [ ] Canales inactivos no se muestran.
-- [ ] Links externos abren correctamente.
-- [ ] No se perdieron `contactChannels` de la web publica.
+- [x] `/contacto` carga sin errores.
+- [x] Email, telefono, WhatsApp, redes, ubicacion u horarios se muestran si existen.
+- [x] Canales inactivos no se muestran.
+- [x] Links externos abren correctamente.
+- [x] No se perdieron `contactChannels` de la web publica.
 
 ## Blog - listado
 
-- [ ] `/blog` carga sin errores.
-- [ ] La pagina usa blogs publicados desde Firestore cuando esta disponible.
-- [ ] Si Firestore falla, usa mocks/fallback sin romper.
-- [ ] No aparece titulo grande superior innecesario.
-- [ ] Articulo principal muestra el blog publicado mas reciente.
-- [ ] Articulo principal muestra imagen, fecha, titulo, subtitulo y extracto.
-- [ ] `Leer mas` esta integrado al resumen.
-- [ ] Imagen principal del articulo es clickeable.
-- [ ] Grid inferior excluye el articulo principal.
-- [ ] Cards muestran imagen, fecha, titulo, subtitulo y categorias.
-- [ ] Hover desktop en imagen muestra overlay con extracto y `Leer mas`.
-- [ ] En mobile no depende del hover para entender la card.
-- [ ] Imagenes mock/locales no estan rotas.
+- [x] `/blog` carga sin errores.
+- [x] La pagina usa blogs publicados desde Firestore cuando esta disponible.
+- [x] Si Firestore falla, usa mocks/fallback sin romper.
+- [x] No aparece titulo grande superior innecesario.
+- [x] Articulo principal muestra el blog publicado mas reciente.
+- [x] Articulo principal muestra imagen, fecha, titulo, subtitulo y extracto.
+- [x] `Leer mas` esta integrado al resumen.
+- [x] Imagen principal del articulo es clickeable.
+- [x] Grid inferior excluye el articulo principal.
+- [x] Cards muestran imagen, fecha, titulo, subtitulo y categorias.
+- [x] Hover desktop en imagen muestra overlay con extracto y `Leer mas`.
+- [x] En mobile no depende del hover para entender la card.
+- [x] Imagenes mock/locales no estan rotas.
 
 ## Blog - detalle
 
-- [ ] Blog antiguo/mock abre por `/blog/[slug]`.
-- [ ] Blog creado desde admin abre por `/blog/[slug]` sin 404.
-- [ ] Blog publicado se muestra.
+- [x] Blog antiguo/mock abre por `/blog/[slug]`.
+- [x] Blog creado desde admin abre por `/blog/[slug]` sin 404.
+- [x] Blog publicado se muestra.
 - [ ] Blog `draft` u `hidden` no se muestra como publico.
-- [ ] Slug inexistente devuelve 404 o estado no encontrado segun corresponda.
-- [ ] Encabezado inicia con titulo, subtitulo y fecha.
-- [ ] No se muestran categorias arriba del titulo.
-- [ ] Imagen principal carga si existe.
-- [ ] Si no hay imagen principal, no rompe el layout.
-- [ ] Contenido se divide en parrafos correctamente.
-- [ ] Secciones de proyectos relacionados aparecen por categoria.
-- [ ] Categorias relacionadas se muestran centradas.
-- [ ] Texto `Proyectos relacionados` queda alineado a la izquierda.
-- [ ] Layout relacionado desktop usa proporcion 50% / 25% / 25%.
-- [ ] Hover en imagen de proyecto relacionado muestra descripcion y `Leer mas`.
-- [ ] Mobile apila proyectos relacionados en una columna.
-- [ ] Link `Volver a Blogs` funciona.
+- [x] Slug inexistente devuelve 404 o estado no encontrado segun corresponda.<!-- Replicar a proyectos  -->
+- [x] Encabezado inicia con titulo, subtitulo y fecha.
+- [x] No se muestran categorias arriba del titulo.
+- [x] Imagen principal carga si existe.
+- [x] Si no hay imagen principal, no rompe el layout.
+- [x] Contenido se divide en parrafos correctamente.
+- [x] Secciones de proyectos relacionados aparecen por categoria.
+- [x] Categorias relacionadas se muestran centradas.
+- [x] Texto `Proyectos relacionados` queda alineado a la izquierda.
+- [x] Layout relacionado desktop usa proporcion 50% / 25% / 25%.
+- [x] Hover en imagen de proyecto relacionado muestra descripcion y `Leer mas`.
+- [x] Mobile apila proyectos relacionados en una columna.
+- [x] Link `Volver a Blogs` funciona.
 
 ## Admin - login y shell
 
-- [ ] `/admin/login` muestra formulario.
-- [ ] Credenciales invalidas muestran error.
-- [ ] Credenciales validas entran al admin.
-- [ ] Sesion protegida redirige a login si no hay usuario.
-- [ ] Boton cerrar sesion funciona.
-- [ ] Topbar admin muestra logo/marca correctamente.
-- [ ] Link `Ver sitio` funciona.
-- [ ] Menu admin muestra Inicio, Proyectos, Categorias, Blogs, Estudio y Equipo.
+- [x] `/admin/login` muestra formulario.
+- [x] Credenciales invalidas muestran error.
+- [x] Credenciales validas entran al admin.
+- [x] Sesion protegida redirige a login si no hay usuario.
+- [x] Boton cerrar sesion funciona.
+- [x] Topbar admin muestra logo/marca correctamente.
+- [x] Link `Ver sitio` funciona.
+- [x] Menu admin muestra Inicio, Proyectos, Categorias, Blogs, Estudio y Equipo.
 
 ## Admin - dashboard
 
-- [ ] `/admin` carga despues de autenticar.
-- [ ] Cards son completamente clickeables.
-- [ ] Cards muestran iconos coherentes.
-- [ ] Cards muestran contadores de Proyectos, Categorias, Blogs y Equipo.
-- [ ] Card Contacto ya no aparece.
-- [ ] Grid se ve equilibrado con 4/5 modulos segun viewport.
-- [ ] Hover/focus de cards funciona.
+- [x] `/admin` carga despues de autenticar.
+- [x] Cards son completamente clickeables.
+- [x] Cards muestran iconos coherentes.
+- [x] Cards muestran contadores de Proyectos, Categorias, Blogs y Equipo.
+- [x] Card Contacto ya no aparece.
+- [x] Grid se ve equilibrado con 4/5 modulos segun viewport.
+- [x] Hover/focus de cards funciona.
 
 ## Admin - proyectos
 
-- [ ] `/admin/projects` lista proyectos.
-- [ ] Crear proyecto guarda titulo, slug automatico, resumen, descripcion y metadata.
-- [ ] Editar proyecto conserva/actualiza datos correctamente.
-- [ ] Slug se genera correctamente al crear.
-- [ ] Activar/desactivar proyecto funciona.
-- [ ] Proyecto activo aparece en publico.
-- [ ] Proyecto inactivo no aparece en publico.
-- [ ] Marcar destacado afecta Home/carrusel cuando corresponde.
-- [ ] Seleccion multiple de categorias funciona.
-- [ ] Especializacion principal se selecciona con dropdown custom.
-- [ ] Subir portada acepta JPG, PNG o WebP validos.
-- [ ] Subir portada rechaza formatos o tamanios no permitidos.
-- [ ] Subir galeria funciona.
-- [ ] Subir plano acepta imagen/PDF permitido.
-- [ ] Ocultar/mostrar media funciona.
-- [ ] Reordenar media funciona.
-- [ ] Eliminar media abre modal propio, no `window.confirm`.
-- [ ] Eliminar media quita el documento de media.
-- [ ] Reordenar proyectos guarda `sortOrder`.
-- [ ] Eliminar proyecto abre modal profesional.
-- [ ] Confirmar eliminar proyecto borra documento Firestore.
-- [ ] Confirmar eliminar proyecto borra media/portada de Storage solo si tienen `storagePath`.
-- [ ] Eliminar proyecto no borra categorias asociadas.
-- [ ] Tras eliminar proyecto, desaparece del listado.
+- [x] `/admin/projects` lista proyectos.
+- [x] Crear proyecto guarda titulo, slug automatico, resumen, descripcion y metadata.
+- [x] Editar proyecto conserva/actualiza datos correctamente.
+- [ ] Slug se genera correctamente al crear.<!-- Ojjo al actualisar nombre del proyecto no se actualiza el slug -->
+- [x] Activar/desactivar proyecto funciona.
+- [x] Proyecto activo aparece en publico.
+- [x] Proyecto inactivo no aparece en publico.
+- [x] Marcar destacado afecta Home/carrusel cuando corresponde.
+- [x] Seleccion multiple de categorias funciona.
+- [x] Especializacion principal se selecciona con dropdown custom.
+- [x] Subir portada acepta JPG, PNG o WebP validos.
+- [ ] Subir portada rechaza formatos o tamanios no permitidos.<!-- no tenemos nada de esto -->
+- [x] Subir galeria funciona.
+- [x] Subir plano acepta imagen/PDF permitido.
+- [x] Ocultar/mostrar media funciona.
+- [x] Reordenar media funciona.
+- [x] Eliminar media abre modal propio, no `window.confirm`.
+- [] Eliminar media quita el documento de media.<!-- Mmm no sigue en firestoreage -->
+- [x] Reordenar proyectos guarda `sortOrder`.
+- [x] Eliminar proyecto abre modal profesional.
+- [x] Confirmar eliminar proyecto borra documento Firestore.
+- [ ] Confirmar eliminar proyecto borra media/portada de Storage solo si tienen `storagePath`.<!-- No borra galeria creo que solo borra portada e intuyo que tampoco borra planos cuando se elimina el proyecto  -->
+- [x] Eliminar proyecto no borra categorias asociadas.
+- [x] Tras eliminar proyecto, desaparece del listado.
 
 ## Admin - categorias
 

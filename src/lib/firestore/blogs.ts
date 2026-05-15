@@ -1,16 +1,19 @@
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
-  query,
   setDoc,
   updateDoc,
-  where,
 } from "firebase/firestore";
+import {
+  collection as liteCollection,
+  getDocs as liteGetDocs,
+  getFirestore as getLiteFirestore,
+  query as liteQuery,
+  where as liteWhere,
+} from "firebase/firestore/lite";
 
 import { blogs as localBlogs } from "@/data/blogs";
-import { db } from "@/lib/firebase";
+import { app, db } from "@/lib/firebase";
 import { removeUndefinedValues } from "@/lib/portfolio-helpers";
 import type { Blog, BlogStatus } from "@/types/portfolio";
 
@@ -29,7 +32,8 @@ function withId<T extends { id: string }>(id: string, data: T) {
 
 export async function getBlogs(): Promise<Blog[]> {
   try {
-    const snapshot = await getDocs(collection(db, "blogs"));
+    const liteDb = getLiteFirestore(app);
+    const snapshot = await liteGetDocs(liteCollection(liteDb, "blogs"));
 
     return sortByPublishedAtDesc(
       snapshot.docs.map((item) => withId(item.id, item.data() as Blog)),
@@ -42,7 +46,10 @@ export async function getBlogs(): Promise<Blog[]> {
 
 export async function getBlogsByStatus(status: BlogStatus): Promise<Blog[]> {
   try {
-    const snapshot = await getDocs(query(collection(db, "blogs"), where("status", "==", status)));
+    const liteDb = getLiteFirestore(app);
+    const snapshot = await liteGetDocs(
+      liteQuery(liteCollection(liteDb, "blogs"), liteWhere("status", "==", status)),
+    );
 
     return sortByPublishedAtDesc(
       snapshot.docs.map((item) => withId(item.id, item.data() as Blog)),
@@ -59,16 +66,25 @@ export async function getPublishedBlogs(): Promise<Blog[]> {
 
 export async function getBlogBySlug(slug: string): Promise<Blog | null> {
   try {
-    const snapshot = await getDocs(
-      query(collection(db, "blogs"), where("slug", "==", slug), where("status", "==", "published")),
-    );
-    const blog = snapshot.docs[0];
-
-    return blog ? withId(blog.id, blog.data() as Blog) : null;
+    return await getBlogBySlugFromFirestore(slug);
   } catch (error) {
     console.warn(`Firestore blog query failed for slug "${slug}". Using local mock fallback.`, error);
     return localBlogs.find((blog) => blog.slug === slug && blog.status === "published") ?? null;
   }
+}
+
+export async function getBlogBySlugFromFirestore(slug: string): Promise<Blog | null> {
+  const liteDb = getLiteFirestore(app);
+  const snapshot = await liteGetDocs(
+    liteQuery(
+      liteCollection(liteDb, "blogs"),
+      liteWhere("slug", "==", slug),
+      liteWhere("status", "==", "published"),
+    ),
+  );
+  const blog = snapshot.docs[0];
+
+  return blog ? withId(blog.id, blog.data() as Blog) : null;
 }
 
 export async function getBlogById(id: string): Promise<Blog | null> {
