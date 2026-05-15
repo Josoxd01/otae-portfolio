@@ -20,10 +20,11 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
       <Navbar />
       <main className="min-h-screen bg-white text-neutral-950">
         <ProjectsPageClient
-          key={initialCategoryId}
+          key={categoryQuery ?? initialCategoryId}
           projects={projects}
           categories={categories}
           initialCategoryId={initialCategoryId}
+          initialCategoryQuery={categoryQuery}
           projectMediaByProjectId={projectMediaByProjectId}
         />
       </main>

@@ -143,10 +143,7 @@ export async function hideAdminProject(projectId: string) {
 export async function deleteAdminProject(projectId: string) {
   const project = await getAdminProject(projectId);
   const media = await getAdminProjectMedia(projectId);
-  const storagePaths = [
-    project?.coverMedia?.storagePath,
-    ...media.map((item) => item.storagePath),
-  ].filter((path): path is string => Boolean(path));
+  const storagePaths = getProjectStoragePaths(project, media);
 
   await deleteStoragePaths(storagePaths);
 
@@ -212,6 +209,13 @@ export async function updateAdminProjectMediaSortOrders(
 }
 
 export async function deleteAdminProjectMedia(projectId: string, mediaId: string) {
+  const snapshot = await getDoc(doc(db, "projects", projectId, "media", mediaId));
+  const media = snapshot.exists() ? withId(snapshot.id, snapshot.data() as ProjectMedia) : undefined;
+
+  if (media?.storagePath) {
+    await deleteStoragePaths([media.storagePath]);
+  }
+
   await deleteDoc(doc(db, "projects", projectId, "media", mediaId));
 }
 
@@ -400,4 +404,11 @@ async function deleteStoragePaths(paths: string[]) {
       console.warn(`Could not delete storage file "${uniquePaths[index]}".`, result.reason);
     }
   });
+}
+
+function getProjectStoragePaths(project: Project | undefined, media: ProjectMedia[]) {
+  return [
+    project?.coverMedia?.storagePath,
+    ...media.map((item) => item.storagePath),
+  ].filter((path): path is string => Boolean(path));
 }

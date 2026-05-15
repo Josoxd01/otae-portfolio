@@ -67,7 +67,7 @@ export function SpecializationAreasSection({
           ) : null}
 
           <Link
-            href={`/proyectos?categoria=${activeCategory.slug}`}
+            href={`/proyectos?categoria=${activeCategory.id}`}
             className="mt-8 inline-flex items-center gap-3 text-sm font-semibold text-neutral-950 transition hover:gap-4"
           >
             Ver proyectos de {activeCategory.name} <span aria-hidden="true">→</span>
@@ -122,7 +122,7 @@ export function SpecializationAreasSection({
           </div>
 
           <Link
-            href={relatedProject ? `/proyectos/${relatedProject.slug}` : `/proyectos?categoria=${activeCategory.slug}`}
+            href={relatedProject ? `/proyectos/${relatedProject.slug}` : `/proyectos?categoria=${activeCategory.id}`}
             className="group absolute bottom-0 right-0 h-[48%] w-[52%] overflow-hidden border-[10px] border-neutral-50 bg-neutral-200 shadow-[0_18px_42px_rgba(0,0,0,0.12)] sm:border-[14px] lg:h-[46%] lg:w-[47%]"
             aria-label={
               relatedProject

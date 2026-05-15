@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useProjectsPageData } from "@/hooks/useProjectsPageData";
 import type { Project, ProjectCategory, ProjectMedia } from "@/types/portfolio";
@@ -10,6 +10,7 @@ import type { Project, ProjectCategory, ProjectMedia } from "@/types/portfolio";
 interface ProjectsPageClientProps {
   categories: ProjectCategory[];
   initialCategoryId?: string;
+  initialCategoryQuery?: string;
   projectMediaByProjectId: Record<string, ProjectMedia[]>;
   projects: Project[];
 }
@@ -25,7 +26,13 @@ const projectsPerPage = 3;
 const heroVideoUrl = "/videos/projects-hero.mp4";
 const heroFallbackImageUrl = "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&w=2200&q=80";
 
-export function ProjectsPageClient({ categories, initialCategoryId = "all", projectMediaByProjectId, projects }: ProjectsPageClientProps) {
+export function ProjectsPageClient({
+  categories,
+  initialCategoryId = "all",
+  initialCategoryQuery,
+  projectMediaByProjectId,
+  projects,
+}: ProjectsPageClientProps) {
   const projectsPageData = useProjectsPageData({ categories, projectMediaByProjectId, projects });
   const activeCategories = projectsPageData.categories;
   const activeProjectMediaByProjectId = projectsPageData.projectMediaByProjectId;
@@ -37,8 +44,29 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
   const [page, setPage] = useState(1);
   const [videoFailed, setVideoFailed] = useState(false);
   const projectsListRef = useRef<HTMLDivElement | null>(null);
+  const [hasResolvedInitialCategory, setHasResolvedInitialCategory] = useState(
+    initialCategoryId !== "all" || !initialCategoryQuery,
+  );
 
   const categoryById = useMemo(() => new Map(activeCategories.map((category) => [category.id, category])), [activeCategories]);
+
+  useEffect(() => {
+    if (hasResolvedInitialCategory || !initialCategoryQuery) {
+      return;
+    }
+
+    const category = activeCategories.find(
+      (item) => item.id === initialCategoryQuery || item.slug === initialCategoryQuery,
+    );
+
+    if (!category) {
+      return;
+    }
+
+    setCategoryId(category.id);
+    setPage(1);
+    setHasResolvedInitialCategory(true);
+  }, [activeCategories, hasResolvedInitialCategory, initialCategoryQuery]);
 
   const categoryOptions = useMemo<FilterOption[]>(
     () => [
