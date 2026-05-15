@@ -9,6 +9,7 @@ import type { DragEvent, MouseEvent } from "react";
 
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
 import {
   deleteAdminTeamMember,
   getAdminTeamMembers,
@@ -21,6 +22,7 @@ const pageSizeOptions = [10, 20, 50];
 
 export function AdminTeamPageClient() {
   const router = useRouter();
+  const toast = useToast();
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
   const [deletingMemberId, setDeletingMemberId] = useState("");
   const [draggedMemberId, setDraggedMemberId] = useState("");
@@ -49,8 +51,15 @@ export function AdminTeamPageClient() {
   }
 
   async function toggleMember(member: TeamMember) {
-    await setAdminTeamMemberActive(member.id, !member.isActive);
-    await loadMembers();
+    try {
+      await setAdminTeamMemberActive(member.id, !member.isActive);
+      await loadMembers();
+      toast.success(member.isActive ? "Miembro desactivado." : "Miembro activado.");
+    } catch (error) {
+      console.warn("Could not update team member status.", error);
+      setErrorMessage("No se pudo actualizar el miembro del equipo.");
+      toast.error("No se pudo actualizar. Intentalo nuevamente.");
+    }
   }
 
   async function handleDrop(targetMemberId: string) {
@@ -120,11 +129,13 @@ export function AdminTeamPageClient() {
         })),
       );
       setDeleteTarget(null);
+      toast.success("Miembro eliminado.");
     } catch (error) {
       console.warn("Could not delete team member.", error);
       setErrorMessage(
         error instanceof Error ? error.message : "No se pudo eliminar el miembro del equipo.",
       );
+      toast.error("No se pudo eliminar. Intentalo nuevamente.");
     } finally {
       setDeletingMemberId("");
     }

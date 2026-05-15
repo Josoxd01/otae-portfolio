@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
 import {
   getAdminCategories,
   getAdminCategory,
@@ -20,6 +21,7 @@ interface AdminCategoryFormClientProps {
 
 export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientProps) {
   const router = useRouter();
+  const toast = useToast();
   const [category, setCategory] = useState<ProjectCategory>(() => createEmptyCategory());
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(Boolean(categoryId));
@@ -69,10 +71,12 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
 
     try {
       await saveAdminCategory(normalizeCategory(category, Boolean(categoryId)));
+      toast.success("Categoria guardada.");
       router.push("/admin/categories");
     } catch (error) {
       console.warn("Could not save category.", error);
       setErrorMessage("No se pudo guardar la categoría.");
+      toast.error("No se pudo guardar. Intentalo nuevamente.");
     } finally {
       setIsSaving(false);
     }
@@ -122,8 +126,10 @@ export function AdminCategoryFormClient({ categoryId }: AdminCategoryFormClientP
       await saveAdminCategory(updatedCategory);
       setCategory(updatedCategory);
       setUploadMessage("Imagen de categoría actualizada.");
+      toast.success("Imagen actualizada.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo subir la imagen.");
+      toast.error("No se pudo subir la imagen.");
     } finally {
       setIsUploadingCover(false);
     }

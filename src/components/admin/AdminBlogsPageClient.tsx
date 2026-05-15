@@ -9,6 +9,7 @@ import type { MouseEvent } from "react";
 
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
 import {
   deleteAdminBlog,
   getAdminBlogs,
@@ -26,6 +27,7 @@ const statusLabels: Record<BlogStatus, string> = {
 
 export function AdminBlogsPageClient() {
   const router = useRouter();
+  const toast = useToast();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Blog | null>(null);
@@ -70,9 +72,11 @@ export function AdminBlogsPageClient() {
       }
 
       await loadBlogs();
+      toast.success(status === "published" ? "Blog publicado." : "Blog ocultado.");
     } catch (error) {
       console.warn("Could not update blog status.", error);
       setErrorMessage("No se pudo actualizar el estado del blog.");
+      toast.error("No se pudo actualizar. Intentalo nuevamente.");
     } finally {
       setUpdatingBlogId("");
     }
@@ -90,9 +94,11 @@ export function AdminBlogsPageClient() {
       await deleteAdminBlog(deleteTarget.id);
       setBlogs((current) => current.filter((blog) => blog.id !== deleteTarget.id));
       setDeleteTarget(null);
+      toast.success("Blog eliminado.");
     } catch (error) {
       console.warn("Could not delete blog.", error);
       setErrorMessage("No se pudo eliminar el blog.");
+      toast.error("No se pudo eliminar. Intentalo nuevamente.");
     } finally {
       setIsDeleting(false);
     }

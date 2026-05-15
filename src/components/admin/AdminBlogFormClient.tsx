@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
 import {
   getAdminBlog,
   getAdminCategories,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/admin/portfolio-admin";
 import { slugify } from "@/lib/portfolio-helpers";
 import { uploadBlogCoverMedia } from "@/lib/storage";
+import { useDropdownDismiss } from "@/hooks/useDropdownDismiss";
 import type { Blog, BlogStatus, ProjectCategory } from "@/types/portfolio";
 
 const statusOptions: Array<{ label: string; value: BlogStatus }> = [
@@ -26,6 +28,7 @@ interface AdminBlogFormClientProps {
 
 export function AdminBlogFormClient({ blogId }: AdminBlogFormClientProps) {
   const router = useRouter();
+  const toast = useToast();
   const [blog, setBlog] = useState<Blog>(() => createEmptyBlog());
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -45,6 +48,7 @@ export function AdminBlogFormClient({ blogId }: AdminBlogFormClientProps) {
     .filter(Boolean)
     .join(", ");
   const currentBlogId = blog.id || slugify(blog.title);
+  const closeCategorySelect = useCallback(() => setIsCategorySelectOpen(false), []);
 
   useEffect(() => {
     let isMounted = true;
@@ -90,10 +94,12 @@ export function AdminBlogFormClient({ blogId }: AdminBlogFormClientProps) {
       const normalizedBlog = normalizeBlog(blog, Boolean(blogId));
       validateBlog(normalizedBlog);
       await saveAdminBlog(normalizedBlog);
+      toast.success(blogId ? "Blog actualizado." : "Blog creado.");
       router.push("/admin/blogs");
     } catch (error) {
       console.warn("Could not save blog.", error);
       setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el blog.");
+      toast.error("No se pudo guardar. Intentalo nuevamente.");
     } finally {
       setIsSaving(false);
     }
@@ -132,8 +138,10 @@ export function AdminBlogFormClient({ blogId }: AdminBlogFormClientProps) {
       await saveAdminBlog(updatedBlog);
       setBlog(updatedBlog);
       setUploadMessage("Portada actualizada.");
+      toast.success("Portada actualizada.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo subir la portada.");
+      toast.error("No se pudo subir la portada.");
     } finally {
       setIsUploadingCover(false);
     }
@@ -287,6 +295,7 @@ export function AdminBlogFormClient({ blogId }: AdminBlogFormClientProps) {
                   <MultiCategorySelect
                     categories={activeCategories}
                     isOpen={isCategorySelectOpen}
+                    onClose={closeCategorySelect}
                     onOpenChange={() => setIsCategorySelectOpen((current) => !current)}
                     onToggle={toggleCategory}
                     selectedIds={blog.categoryIds}
@@ -424,10 +433,12 @@ function SelectField<T extends string>({
   value: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const closeSelect = useCallback(() => setIsOpen(false), []);
+  const selectRef = useDropdownDismiss<HTMLDivElement>(isOpen, closeSelect);
   const selectedOption = options.find((option) => option.value === value);
 
   return (
-    <div className="relative">
+    <div ref={selectRef} className="relative">
       <FieldLabel>{label}</FieldLabel>
       <button
         type="button"
@@ -453,7 +464,7 @@ function SelectField<T extends string>({
                 }`}
               onClick={() => {
                 onChange(option.value);
-                setIsOpen(false);
+                closeSelect();
               }}
             >
               {option.label}
@@ -469,6 +480,7 @@ function SelectField<T extends string>({
 function MultiCategorySelect({
   categories,
   isOpen,
+  onClose,
   onOpenChange,
   onToggle,
   selectedIds,
@@ -476,13 +488,16 @@ function MultiCategorySelect({
 }: {
   categories: ProjectCategory[];
   isOpen: boolean;
+  onClose: () => void;
   onOpenChange: () => void;
   onToggle: (categoryId: string) => void;
   selectedIds: string[];
   selectedLabel: string;
 }) {
+  const dropdownRef = useDropdownDismiss<HTMLDivElement>(isOpen, onClose);
+
   return (
-    <div className="relative">
+    <div ref={dropdownRef} className="relative">
       <FieldLabel>Categorias</FieldLabel>
       <button
         type="button"
@@ -503,7 +518,10 @@ function MultiCategorySelect({
                 className="accent-neutral-950"
                 type="checkbox"
                 checked={selectedIds.includes(category.id)}
-                onChange={() => onToggle(category.id)}
+                onChange={() => {
+                  onToggle(category.id);
+                  onClose();
+                }}
               />
               {category.name}
             </label>

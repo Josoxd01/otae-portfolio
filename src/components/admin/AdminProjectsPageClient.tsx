@@ -9,6 +9,7 @@ import type { DragEvent, MouseEvent } from "react";
 
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
 import {
   deleteAdminProject,
   getAdminCategories,
@@ -22,6 +23,7 @@ const pageSizeOptions = [10, 20, 50];
 
 export function AdminProjectsPageClient() {
   const router = useRouter();
+  const toast = useToast();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [draggedProjectId, setDraggedProjectId] = useState("");
@@ -60,8 +62,15 @@ export function AdminProjectsPageClient() {
   }
 
   async function toggleProject(project: Project) {
-    await setAdminProjectActive(project.id, !project.isActive);
-    await loadProjects();
+    try {
+      await setAdminProjectActive(project.id, !project.isActive);
+      await loadProjects();
+      toast.success(project.isActive ? "Proyecto desactivado." : "Proyecto activado.");
+    } catch (error) {
+      console.warn("Could not update project status.", error);
+      setErrorMessage("No se pudo actualizar el estado del proyecto.");
+      toast.error("No se pudo actualizar. Intentalo nuevamente.");
+    }
   }
 
   async function deleteProject() {
@@ -76,9 +85,11 @@ export function AdminProjectsPageClient() {
       await deleteAdminProject(deleteTarget.id);
       setProjects((current) => current.filter((project) => project.id !== deleteTarget.id));
       setDeleteTarget(null);
+      toast.success("Proyecto eliminado.");
     } catch (error) {
       console.warn("Could not delete project.", error);
       setErrorMessage("No se pudo eliminar el proyecto.");
+      toast.error("No se pudo eliminar. Intentalo nuevamente.");
     } finally {
       setIsDeleting(false);
     }

@@ -9,6 +9,7 @@ import type { DragEvent, MouseEvent } from "react";
 
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
 import {
   deleteAdminCategory,
   getAdminCategories,
@@ -28,6 +29,7 @@ interface CategoryDeleteAction {
 
 export function AdminCategoriesPageClient() {
   const router = useRouter();
+  const toast = useToast();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [deleteAction, setDeleteAction] = useState<CategoryDeleteAction | null>(null);
   const [draggedCategoryId, setDraggedCategoryId] = useState("");
@@ -56,8 +58,15 @@ export function AdminCategoriesPageClient() {
   }
 
   async function toggleCategory(category: ProjectCategory) {
-    await setAdminCategoryActive(category.id, !category.isActive);
-    await loadCategories();
+    try {
+      await setAdminCategoryActive(category.id, !category.isActive);
+      await loadCategories();
+      toast.success(category.isActive ? "Categoria desactivada." : "Categoria activada.");
+    } catch (error) {
+      console.warn("Could not update category status.", error);
+      setErrorMessage("No se pudo actualizar la categoria.");
+      toast.error("No se pudo actualizar. Intentalo nuevamente.");
+    }
   }
 
   async function prepareDeleteCategory(category: ProjectCategory) {
@@ -74,6 +83,7 @@ export function AdminCategoriesPageClient() {
     } catch (error) {
       console.warn("Could not check category usage.", error);
       setErrorMessage("No se pudo validar si la categoria tiene relaciones.");
+      toast.error("No se pudo validar la categoria.");
     }
   }
 
@@ -93,17 +103,20 @@ export function AdminCategoriesPageClient() {
             category.id === deleteAction.category.id ? { ...category, isActive: false } : category,
           ),
         );
+        toast.success("Categoria ocultada.");
       } else {
         await deleteAdminCategory(deleteAction.category.id);
         setCategories((current) =>
           current.filter((category) => category.id !== deleteAction.category.id),
         );
+        toast.success("Categoria eliminada.");
       }
 
       setDeleteAction(null);
     } catch (error) {
       console.warn("Could not delete category.", error);
       setErrorMessage("No se pudo eliminar la categoria.");
+      toast.error("No se pudo eliminar. Intentalo nuevamente.");
     } finally {
       setIsDeleting(false);
     }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
 import { otaeLogoMedia } from "@/components/layout/brand";
 import { getAdminStudioProfile, saveAdminStudioProfile } from "@/lib/admin/portfolio-admin";
 import { uploadStudioMedia } from "@/lib/storage";
@@ -17,6 +18,7 @@ const mediaFields: Array<{ field: StudioMediaField; label: string; folder: strin
 ];
 
 export function AdminStudioPageClient() {
+  const toast = useToast();
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -61,9 +63,11 @@ export function AdminStudioPageClient() {
     try {
       await saveAdminStudioProfile({ ...studioProfile, logoMedia: undefined });
       setUploadMessage("Perfil del estudio guardado.");
+      toast.success("Estudio actualizado.");
     } catch (error) {
       console.warn("Could not save studio profile.", error);
       setErrorMessage("No se pudo guardar el perfil del estudio.");
+      toast.error("No se pudo guardar. Intentalo nuevamente.");
     } finally {
       setIsSaving(false);
     }
@@ -97,8 +101,10 @@ export function AdminStudioPageClient() {
       await saveAdminStudioProfile(updatedProfile);
       setStudioProfile(updatedProfile);
       setUploadMessage(`${mediaLabel} actualizada.`);
+      toast.success("Imagen actualizada.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo subir la imagen.");
+      toast.error("No se pudo subir la imagen.");
     } finally {
       setUploadingField(null);
     }
