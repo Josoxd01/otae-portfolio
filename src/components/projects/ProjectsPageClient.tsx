@@ -222,11 +222,11 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
               ))}
             </div>
           ) : (
-            <div className="mt-16 border-y border-neutral-200 py-16 text-center">
+            <div className="mt-16 border-y border-neutral-200 py-16 text-center ">
               <p className="font-title text-3xl text-neutral-950">No hay proyectos con esos filtros.</p>
               <button
                 type="button"
-                className="mt-6 text-sm font-semibold text-neutral-500 transition hover:text-neutral-950"
+                className="mt-6 text-sm font-semibold text-neutral-500 transition hover:text-neutral-950 cursor-pointer"
                 onClick={resetFilters}
               >
                 Restablecer búsqueda
@@ -326,8 +326,8 @@ function CustomFilter({
               key={option.value}
               type="button"
               className={`flex w-full items-center justify-between px-3 py-3 text-left text-sm transition ${option.value === value
-                  ? "bg-neutral-950 text-white"
-                  : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950"
+                ? "bg-neutral-950 text-white"
+                : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950"
                 }`}
               onClick={() => onSelect(option.value)}
             >
@@ -407,8 +407,8 @@ function ProjectMediaComposition({ media, priority = false, project }: ProjectMe
       <Link
         href={`/proyectos/${project.slug}`}
         className={`group block overflow-hidden bg-neutral-200 ${media.secondary
-            ? "absolute left-0 top-0 h-[78%] w-[82%]"
-            : "relative h-[420px] w-full sm:h-[560px]"
+          ? "absolute left-0 top-0 h-[78%] w-[82%]"
+          : "relative h-[420px] w-full sm:h-[560px]"
           }`}
       >
         <ProjectImage

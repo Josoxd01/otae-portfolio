@@ -310,6 +310,12 @@ export async function getAdminCategoryUsage(categoryId: string): Promise<Categor
 }
 
 export async function deleteAdminCategory(categoryId: string) {
+  const category = await getAdminCategory(categoryId);
+
+  if (category?.coverMedia?.storagePath) {
+    await deleteStoragePaths([category.coverMedia.storagePath]);
+  }
+
   await deleteDoc(doc(db, "project_categories", categoryId));
 }
 

@@ -29,8 +29,57 @@ const mediaRoleSections: Array<{ role: ProjectMediaRole; title: string }> = [
 ];
 
 export function ProjectDetailPageClient({ initialData, slug }: ProjectDetailPageClientProps) {
-  const { categories, contactChannels, project, projectMedia, studioProfile } =
-    useProjectDetailData(slug, initialData);
+  const { data, isLoading } = useProjectDetailData(slug, initialData);
+
+  if (isLoading) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-white px-6 py-24 text-neutral-950 sm:px-8 lg:px-12">
+          <div className="mx-auto max-w-7xl">
+            <p className="section-label">Proyecto</p>
+            <h1 className="mt-7 font-title text-4xl font-medium leading-tight">
+              Cargando proyecto
+            </h1>
+          </div>
+        </main>
+        <Footer
+          variant="dark"
+          studioProfile={initialData.studioProfile}
+          contactChannels={initialData.contactChannels}
+        />
+      </>
+    );
+  }
+
+  if (!data) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-white px-6 py-24 text-neutral-950 sm:px-8 lg:px-12">
+          <div className="mx-auto max-w-7xl">
+            <p className="section-label">Proyecto</p>
+            <h1 className="mt-7 font-title text-4xl font-medium leading-tight">
+              No encontramos este proyecto
+            </h1>
+            <Link
+              href="/proyectos"
+              className="mt-8 inline-flex items-center gap-3 text-sm font-semibold text-neutral-950 transition hover:gap-4"
+            >
+              &larr; Volver a proyectos
+            </Link>
+          </div>
+        </main>
+        <Footer
+          variant="dark"
+          studioProfile={initialData.studioProfile}
+          contactChannels={initialData.contactChannels}
+        />
+      </>
+    );
+  }
+
+  const { categories, contactChannels, project, projectMedia, studioProfile } = data;
   const primaryCategory = project.primaryCategoryId
     ? categories.find((category) => category.id === project.primaryCategoryId)
     : categories.find((category) => category.id === project.categoryIds[0]);
