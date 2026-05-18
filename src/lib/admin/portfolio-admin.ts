@@ -20,8 +20,18 @@ import {
   updateBlog,
   updateBlogStatus,
 } from "@/lib/firestore/blogs";
+import {
+  normalizeProjectCategories,
+  normalizeStudioProfileForAdmin,
+  validateAdminBlog,
+  validateAdminCategory,
+  validateAdminProject,
+  validateAdminProjectMedia,
+  validateAdminStudioProfile,
+  validateAdminTeamMember,
+} from "@/lib/admin/admin-validations";
 import { removeUndefinedValues, sortBySortOrder, sortProjects } from "@/lib/portfolio-helpers";
-import { deleteStorageFile } from "@/lib/storage";
+import { deleteStorageFile, deleteStorageFolder } from "@/lib/storage";
 import type {
   Blog,
   BlogStatus,
@@ -55,21 +65,51 @@ export async function getAdminBlog(blogId: string) {
 }
 
 export async function saveAdminBlog(blog: Blog) {
-  const existingBlog = blog.id ? await getAdminBlog(blog.id) : null;
+  const normalizedBlog = {
+    ...blog,
+    publishedAt:
+      blog.status === "published" ? blog.publishedAt || new Date().toISOString() : blog.publishedAt,
+  };
+
+  validateAdminBlog(normalizedBlog);
+
+  const existingBlog = normalizedBlog.id ? await getAdminBlog(normalizedBlog.id) : null;
 
   if (existingBlog) {
-    await updateBlog(blog.id, blog);
+    await updateBlog(normalizedBlog.id, normalizedBlog);
     return;
   }
 
-  await createBlog(blog);
+  await createBlog(normalizedBlog);
 }
 
 export async function setAdminBlogStatus(blogId: string, status: BlogStatus) {
+  if (status === "published") {
+    const blog = await getAdminBlog(blogId);
+
+    if (blog) {
+      validateAdminBlog({
+        ...blog,
+        status,
+        publishedAt: blog.publishedAt || new Date().toISOString(),
+      });
+    }
+  }
+
   await updateBlogStatus(blogId, status);
 }
 
 export async function publishAdminBlog(blogId: string) {
+  const blog = await getAdminBlog(blogId);
+
+  if (blog) {
+    validateAdminBlog({
+      ...blog,
+      status: "published",
+      publishedAt: blog.publishedAt || new Date().toISOString(),
+    });
+  }
+
   await publishBlog(blogId);
 }
 
@@ -116,20 +156,31 @@ export async function getAdminProject(projectId: string) {
 
 export async function saveAdminProject(project: Project) {
   const now = new Date().toISOString();
+  const normalizedProject = normalizeProjectCategories(project);
   const projectRef = doc(db, "projects", project.id);
+
+  validateAdminProject(normalizedProject);
 
   await setDoc(
     projectRef,
     removeUndefinedValues({
-      ...project,
+      ...normalizedProject,
       updatedAt: now,
-      createdAt: project.createdAt ?? now,
+      createdAt: normalizedProject.createdAt ?? now,
     }),
     { merge: true },
   );
 }
 
 export async function setAdminProjectActive(projectId: string, isActive: boolean) {
+  if (isActive) {
+    const project = await getAdminProject(projectId);
+
+    if (project) {
+      validateAdminProject({ ...project, isActive });
+    }
+  }
+
   await updateDoc(doc(db, "projects", projectId), {
     isActive,
     updatedAt: new Date().toISOString(),
@@ -146,6 +197,7 @@ export async function deleteAdminProject(projectId: string) {
   const storagePaths = getProjectStoragePaths(project, media);
 
   await deleteStoragePaths(storagePaths);
+  await deleteProjectStorageFolder(projectId);
 
   const batch = writeBatch(db);
   media.forEach((item) => {
@@ -178,6 +230,8 @@ export async function getAdminProjectMedia(projectId: string) {
 }
 
 export async function createAdminProjectMedia(projectId: string, media: Omit<ProjectMedia, "id">) {
+  validateAdminProjectMedia(media);
+
   const cleanMedia = removeUndefinedValues(media);
   const mediaRef = await addDoc(collection(db, "projects", projectId, "media"), cleanMedia);
   await updateDoc(mediaRef, { id: mediaRef.id });
@@ -190,6 +244,14 @@ export async function updateAdminProjectMedia(
   mediaId: string,
   media: Partial<ProjectMedia>,
 ) {
+  const snapshot = await getDoc(doc(db, "projects", projectId, "media", mediaId));
+  const currentMedia = snapshot.exists() ? withId(snapshot.id, snapshot.data() as ProjectMedia) : undefined;
+  const nextMedia = currentMedia ? { ...currentMedia, ...media } : undefined;
+
+  if (nextMedia) {
+    validateAdminProjectMedia(nextMedia);
+  }
+
   await updateDoc(doc(db, "projects", projectId, "media", mediaId), media);
 }
 
@@ -249,13 +311,15 @@ export async function saveAdminCategory(category: ProjectCategory) {
   const now = new Date().toISOString();
   const categoryRef = doc(db, "project_categories", category.id);
 
+  validateAdminCategory(category);
+
   await setDoc(
     categoryRef,
-    {
+    removeUndefinedValues({
       ...category,
       updatedAt: now,
       createdAt: category.createdAt ?? now,
-    },
+    }),
     { merge: true },
   );
 }
@@ -277,6 +341,14 @@ export async function updateAdminCategorySortOrders(
 }
 
 export async function setAdminCategoryActive(categoryId: string, isActive: boolean) {
+  if (isActive) {
+    const category = await getAdminCategory(categoryId);
+
+    if (category) {
+      validateAdminCategory({ ...category, isActive });
+    }
+  }
+
   await updateDoc(doc(db, "project_categories", categoryId), {
     isActive,
     updatedAt: new Date().toISOString(),
@@ -334,10 +406,14 @@ export async function getAdminStudioProfile() {
 }
 
 export async function saveAdminStudioProfile(studioProfile: StudioProfile) {
+  const normalizedProfile = normalizeStudioProfileForAdmin(studioProfile);
+
+  validateAdminStudioProfile(normalizedProfile);
+
   await setDoc(
     doc(db, "studio_profile", "main"),
     removeUndefinedValues({
-      ...studioProfile,
+      ...normalizedProfile,
       updatedAt: new Date().toISOString(),
     }),
     { merge: true },
@@ -363,6 +439,8 @@ export async function getAdminTeamMember(memberId: string) {
 }
 
 export async function saveAdminTeamMember(member: TeamMember) {
+  validateAdminTeamMember(member);
+
   await setDoc(
     doc(db, "team_members", member.id),
     removeUndefinedValues(member),
@@ -389,6 +467,14 @@ export async function deleteAdminTeamMember(memberId: string) {
 }
 
 export async function setAdminTeamMemberActive(memberId: string, isActive: boolean) {
+  if (isActive) {
+    const member = await getAdminTeamMember(memberId);
+
+    if (member) {
+      validateAdminTeamMember({ ...member, isActive });
+    }
+  }
+
   await updateDoc(doc(db, "team_members", memberId), { isActive });
 }
 
@@ -404,6 +490,14 @@ async function deleteStoragePaths(paths: string[]) {
       console.warn(`Could not delete storage file "${uniquePaths[index]}".`, result.reason);
     }
   });
+}
+
+async function deleteProjectStorageFolder(projectId: string) {
+  try {
+    await deleteStorageFolder(`project-media/${projectId}`);
+  } catch (error) {
+    console.warn(`Could not delete project storage folder "project-media/${projectId}".`, error);
+  }
 }
 
 function getProjectStoragePaths(project: Project | undefined, media: ProjectMedia[]) {

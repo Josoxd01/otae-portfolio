@@ -6,6 +6,7 @@ import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useToast } from "@/components/admin/AdminToastProvider";
+import { validateAdminTeamMember } from "@/lib/admin/admin-validations";
 import {
   getAdminTeamMember,
   getAdminTeamMembers,
@@ -70,12 +71,13 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
 
     try {
       const normalizedMember = normalizeMember(member, Boolean(memberId));
+      validateAdminTeamMember(normalizedMember);
       await saveAdminTeamMember(normalizedMember);
       toast.success(memberId ? "Miembro actualizado." : "Miembro creado.");
       router.push("/admin/team");
     } catch (error) {
       console.warn("Could not save team member.", error);
-      setErrorMessage("No se pudo guardar el miembro del equipo.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el miembro del equipo.");
       toast.error("No se pudo guardar. Intentalo nuevamente.");
     } finally {
       setIsSaving(false);
@@ -258,7 +260,7 @@ function createEmptyMember(): TeamMember {
     id: "",
     name: "",
     sortOrder: 1,
-    isActive: true,
+    isActive: false,
   };
 }
 

@@ -6,6 +6,10 @@ import type { ChangeEvent, FormEvent } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useToast } from "@/components/admin/AdminToastProvider";
 import { otaeLogoMedia } from "@/components/layout/brand";
+import {
+  normalizeStudioProfileForAdmin,
+  validateAdminStudioProfile,
+} from "@/lib/admin/admin-validations";
 import { getAdminStudioProfile, saveAdminStudioProfile } from "@/lib/admin/portfolio-admin";
 import { uploadStudioMedia } from "@/lib/storage";
 import type { MediaReference, OpeningHour, StudioProfile } from "@/types/portfolio";
@@ -61,12 +65,15 @@ export function AdminStudioPageClient() {
     setIsSaving(true);
 
     try {
-      await saveAdminStudioProfile(normalizeStudioProfile(studioProfile));
+      const normalizedProfile = normalizeStudioProfile(studioProfile);
+      validateAdminStudioProfile(normalizedProfile);
+      await saveAdminStudioProfile(normalizedProfile);
+      setStudioProfile(normalizedProfile);
       setUploadMessage("Perfil del estudio guardado.");
       toast.success("Estudio actualizado.");
     } catch (error) {
       console.warn("Could not save studio profile.", error);
-      setErrorMessage("No se pudo guardar el perfil del estudio.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el perfil del estudio.");
       toast.error("No se pudo guardar. Intentalo nuevamente.");
     } finally {
       setIsSaving(false);
@@ -386,9 +393,11 @@ function LogoReadOnlyCard() {
 }
 
 function normalizeStudioProfile(studioProfile: StudioProfile): StudioProfile {
+  const normalizedProfile = normalizeStudioProfileForAdmin(studioProfile);
+
   return {
-    ...studioProfile,
-    openingHours: (studioProfile.openingHours ?? [])
+    ...normalizedProfile,
+    openingHours: (normalizedProfile.openingHours ?? [])
       .map((item) => ({
         label: item.label.trim(),
         value: item.value.trim(),

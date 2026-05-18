@@ -10,6 +10,7 @@ import type { DragEvent, MouseEvent } from "react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useToast } from "@/components/admin/AdminToastProvider";
+import { validateAdminProject } from "@/lib/admin/admin-validations";
 import {
   deleteAdminProject,
   getAdminCategories,
@@ -63,12 +64,16 @@ export function AdminProjectsPageClient() {
 
   async function toggleProject(project: Project) {
     try {
+      if (!project.isActive) {
+        validateAdminProject({ ...project, isActive: true });
+      }
+
       await setAdminProjectActive(project.id, !project.isActive);
       await loadProjects();
       toast.success(project.isActive ? "Proyecto desactivado." : "Proyecto activado.");
     } catch (error) {
       console.warn("Could not update project status.", error);
-      setErrorMessage("No se pudo actualizar el estado del proyecto.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar el estado del proyecto.");
       toast.error("No se pudo actualizar. Intentalo nuevamente.");
     }
   }

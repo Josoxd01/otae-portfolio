@@ -6,6 +6,7 @@ import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useToast } from "@/components/admin/AdminToastProvider";
+import { validateAdminBlog } from "@/lib/admin/admin-validations";
 import {
   getAdminBlog,
   getAdminCategories,
@@ -92,7 +93,7 @@ export function AdminBlogFormClient({ blogId }: AdminBlogFormClientProps) {
 
     try {
       const normalizedBlog = normalizeBlog(blog, Boolean(blogId));
-      validateBlog(normalizedBlog);
+      validateAdminBlog(normalizedBlog);
       await saveAdminBlog(normalizedBlog);
       toast.success(blogId ? "Blog actualizado." : "Blog creado.");
       router.push("/admin/blogs");
@@ -152,7 +153,7 @@ export function AdminBlogFormClient({ blogId }: AdminBlogFormClientProps) {
       ...current,
       title: value,
       id: blogId ? current.id : slugify(value),
-      slug: slugify(value),
+      slug: blogId && current.slug ? current.slug : slugify(value),
     }));
   }
 
@@ -242,7 +243,6 @@ export function AdminBlogFormClient({ blogId }: AdminBlogFormClientProps) {
                   <FieldLabel>Contenido</FieldLabel>
                   <textarea
                     className="mt-3 w-full resize-y border border-neutral-300 px-4 py-3 text-sm leading-7 focus:border-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-950"
-                    required
                     rows={12}
                     value={blog.content}
                     onChange={(event) => updateField("content", event.target.value)}
@@ -346,24 +346,6 @@ function normalizeBlog(blog: Blog, keepExistingId: boolean): Blog {
       }
       : undefined,
   };
-}
-
-function validateBlog(blog: Blog) {
-  if (!blog.title.trim()) {
-    throw new Error("El titulo es requerido.");
-  }
-
-  if (!blog.slug.trim()) {
-    throw new Error("El slug es requerido.");
-  }
-
-  if (!blog.content.trim()) {
-    throw new Error("El contenido es requerido.");
-  }
-
-  if (blog.categoryIds.length === 0) {
-    throw new Error("Selecciona al menos una categoria.");
-  }
 }
 
 function toDateInputValue(value?: string) {

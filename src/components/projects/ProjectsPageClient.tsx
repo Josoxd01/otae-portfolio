@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { useProjectsPageData } from "@/hooks/useProjectsPageData";
 import type { Project, ProjectCategory, ProjectMedia } from "@/types/portfolio";
@@ -38,35 +38,27 @@ export function ProjectsPageClient({
   const activeProjectMediaByProjectId = projectsPageData.projectMediaByProjectId;
   const activeProjects = projectsPageData.projects;
   const [categoryId, setCategoryId] = useState(initialCategoryId);
+  const [hasManualCategoryFilter, setHasManualCategoryFilter] = useState(false);
   const [year, setYear] = useState("all");
   const [location, setLocation] = useState("all");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [page, setPage] = useState(1);
   const [videoFailed, setVideoFailed] = useState(false);
   const projectsListRef = useRef<HTMLDivElement | null>(null);
-  const [hasResolvedInitialCategory, setHasResolvedInitialCategory] = useState(
-    initialCategoryId !== "all" || !initialCategoryQuery,
-  );
 
   const categoryById = useMemo(() => new Map(activeCategories.map((category) => [category.id, category])), [activeCategories]);
 
-  useEffect(() => {
-    if (hasResolvedInitialCategory || !initialCategoryQuery) {
-      return;
+  const resolvedCategoryId = useMemo(() => {
+    if (hasManualCategoryFilter || categoryId !== "all" || !initialCategoryQuery) {
+      return categoryId;
     }
 
-    const category = activeCategories.find(
-      (item) => item.id === initialCategoryQuery || item.slug === initialCategoryQuery,
+    return (
+      activeCategories.find(
+        (category) => category.id === initialCategoryQuery || category.slug === initialCategoryQuery,
+      )?.id ?? categoryId
     );
-
-    if (!category) {
-      return;
-    }
-
-    setCategoryId(category.id);
-    setPage(1);
-    setHasResolvedInitialCategory(true);
-  }, [activeCategories, hasResolvedInitialCategory, initialCategoryQuery]);
+  }, [activeCategories, categoryId, hasManualCategoryFilter, initialCategoryQuery]);
 
   const categoryOptions = useMemo<FilterOption[]>(
     () => [
@@ -100,7 +92,7 @@ export function ProjectsPageClient({
     () =>
       activeProjects
         .filter((project) => {
-          const matchesCategory = categoryId === "all" || project.categoryIds.includes(categoryId);
+          const matchesCategory = resolvedCategoryId === "all" || project.categoryIds.includes(resolvedCategoryId);
           const matchesYear = year === "all" || String(project.year) === year;
           const matchesLocation = location === "all" || project.location === location;
 
@@ -113,7 +105,7 @@ export function ProjectsPageClient({
 
           return a.sortOrder - b.sortOrder;
         }),
-    [activeProjects, categoryId, location, year],
+    [activeProjects, location, resolvedCategoryId, year],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / projectsPerPage));
@@ -122,6 +114,7 @@ export function ProjectsPageClient({
   function updateFilter(filter: FilterKey, value: string) {
     if (filter === "category") {
       setCategoryId(value);
+      setHasManualCategoryFilter(true);
     }
 
     if (filter === "year") {
@@ -138,6 +131,7 @@ export function ProjectsPageClient({
 
   function resetFilters() {
     setCategoryId("all");
+    setHasManualCategoryFilter(true);
     setYear("all");
     setLocation("all");
     setOpenFilter(null);
@@ -197,7 +191,7 @@ export function ProjectsPageClient({
                 onOpenChange={() => setOpenFilter(openFilter === "category" ? null : "category")}
                 onSelect={(value) => updateFilter("category", value)}
                 options={categoryOptions}
-                value={categoryId}
+                value={resolvedCategoryId}
               />
               <CustomFilter
                 icon={<CalendarIcon />}

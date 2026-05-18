@@ -8,6 +8,10 @@ import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useToast } from "@/components/admin/AdminToastProvider";
 import {
+  normalizeProjectCategories,
+  validateAdminProject,
+} from "@/lib/admin/admin-validations";
+import {
   createAdminProjectMedia,
   deleteAdminProjectMedia,
   getAdminCategories,
@@ -33,7 +37,6 @@ const projectStageOptions: Array<{ label: string; value: ProjectStage }> = [
   { label: "Conceptual", value: "conceptual" },
   { label: "Diseño", value: "design" },
   { label: "En construcción", value: "under_construction" },
-  { label: "Construido", value: "built" },
   { label: "Completado", value: "completed" },
 ];
 
@@ -156,12 +159,13 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
 
     try {
       const normalizedProject = normalizeProject(form, Boolean(projectId));
+      validateAdminProject(normalizedProject);
       await saveAdminProject(normalizedProject);
       toast.success(projectId ? "Proyecto actualizado." : "Proyecto creado.");
       router.push("/admin/projects");
     } catch (error) {
       console.warn("Could not save project.", error);
-      setErrorMessage("No se pudo guardar el proyecto.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el proyecto.");
       toast.error("No se pudo guardar. Intentalo nuevamente.");
     } finally {
       setIsSaving(false);
@@ -628,7 +632,7 @@ function createEmptyProject(): Project {
     description: "",
     categoryIds: [],
     isFeatured: false,
-    isActive: true,
+    isActive: false,
     sortOrder: 1,
     projectStage: "design",
   };
@@ -678,14 +682,14 @@ function moveMedia(mediaItems: ProjectMedia[], fromIndex: number, toIndex: numbe
 
 function normalizeProject(project: Project, keepExistingSlug: boolean): Project {
   const slug = keepExistingSlug && project.slug ? project.slug : slugify(project.title);
+  const normalizedCategories = normalizeProjectCategories(project);
 
   return {
-    ...project,
+    ...normalizedCategories,
     id: project.id || slug,
     slug,
     subtitle: project.subtitle || undefined,
     location: project.location || undefined,
-    primaryCategoryId: project.primaryCategoryId || project.categoryIds[0],
     coverMedia: project.coverMedia?.url
       ? {
         assetType: "image",

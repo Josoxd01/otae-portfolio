@@ -10,6 +10,7 @@ import type { DragEvent, MouseEvent } from "react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useToast } from "@/components/admin/AdminToastProvider";
+import { validateAdminTeamMember } from "@/lib/admin/admin-validations";
 import {
   deleteAdminTeamMember,
   getAdminTeamMembers,
@@ -52,12 +53,16 @@ export function AdminTeamPageClient() {
 
   async function toggleMember(member: TeamMember) {
     try {
+      if (!member.isActive) {
+        validateAdminTeamMember({ ...member, isActive: true });
+      }
+
       await setAdminTeamMemberActive(member.id, !member.isActive);
       await loadMembers();
       toast.success(member.isActive ? "Miembro desactivado." : "Miembro activado.");
     } catch (error) {
       console.warn("Could not update team member status.", error);
-      setErrorMessage("No se pudo actualizar el miembro del equipo.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar el miembro del equipo.");
       toast.error("No se pudo actualizar. Intentalo nuevamente.");
     }
   }

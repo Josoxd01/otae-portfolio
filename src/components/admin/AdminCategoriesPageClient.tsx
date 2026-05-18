@@ -10,6 +10,7 @@ import type { DragEvent, MouseEvent } from "react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useToast } from "@/components/admin/AdminToastProvider";
+import { validateAdminCategory } from "@/lib/admin/admin-validations";
 import {
   deleteAdminCategory,
   getAdminCategories,
@@ -59,12 +60,16 @@ export function AdminCategoriesPageClient() {
 
   async function toggleCategory(category: ProjectCategory) {
     try {
+      if (!category.isActive) {
+        validateAdminCategory({ ...category, isActive: true });
+      }
+
       await setAdminCategoryActive(category.id, !category.isActive);
       await loadCategories();
       toast.success(category.isActive ? "Categoria desactivada." : "Categoria activada.");
     } catch (error) {
       console.warn("Could not update category status.", error);
-      setErrorMessage("No se pudo actualizar la categoria.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar la categoria.");
       toast.error("No se pudo actualizar. Intentalo nuevamente.");
     }
   }

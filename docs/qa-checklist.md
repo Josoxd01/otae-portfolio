@@ -4,12 +4,12 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 
 ## Preparacion
 
-- [ ] Confirmar que `.env.local` existe localmente y no fue modificado.
-- [ ] Confirmar que Firebase apunta al proyecto correcto.
-- [ ] Confirmar que `npm install` / `npm ci` ya fue ejecutado.
-- [ ] Levantar el proyecto con `npm run dev`.
-- [ ] Abrir el sitio en una ventana normal y otra sin extensiones si Brave/Adblock bloquea Firebase.
-- [ ] Revisar consola del navegador y terminal durante las pruebas.
+- [x] Confirmar que `.env.local` existe localmente y no fue modificado.
+- [x] Confirmar que Firebase apunta al proyecto correcto.
+- [x] Confirmar que `npm install` / `npm ci` ya fue ejecutado.
+- [x] Levantar el proyecto con `npm run dev`.
+- [x] Abrir el sitio en una ventana normal y otra sin extensiones si Brave/Adblock bloquea Firebase.
+- [x] Revisar consola del navegador y terminal durante las pruebas.
 
 ## Web publica - navegacion general
 
@@ -29,7 +29,7 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 - [x] Carrusel de proyectos destacados muestra proyectos activos/destacados.
 - [x] Boton siguiente del carrusel cambia de proyecto.
 - [x] Boton anterior del carrusel cambia de proyecto.
-- [ ] Si un proyecto no tiene categoria principal, muestra fallback correcto.
+- [x] Si un proyecto no tiene categoria principal, muestra fallback correcto.
 - [x] Areas de especializacion muestran categorias activas.
 - [x] Seccion `Ultimo blog` aparece debajo de Areas de especializacion.
 - [x] Ultimo blog toma el blog publicado mas reciente.
@@ -55,7 +55,7 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 
 - [x] Proyecto antiguo/mock abre por `/proyectos/[slug]`.
 - [x] Proyecto nuevo de Firestore abre por `/proyectos/pruebinia` sin 404.
-- [] Si Firestore falla en servidor, la pagina no queda bloqueada antes del cliente. <!-- mmm creo -->
+- [x] Si Firestore falla en servidor, la pagina no queda bloqueada antes del cliente. 
 - [x] Proyecto inactivo no se muestra como publico.
 - [x] Slug inexistente devuelve 404 o estado no encontrado segun corresponda.
 - [x] Portada se muestra si existe.
@@ -63,14 +63,14 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 - [x] Descripcion, ubicacion, anio y area se muestran cuando existen.
 - [x] Galeria visible se muestra.
 - [x] Planos/PDF visibles se muestran.
-- [x] Media oculta no aparece en publico.<!-- Ojo   -->
+- [x] Media oculta no aparece en publico.<!-- Ojo  eliminar -->
 - [x] Link `Volver a proyectos` funciona.
 
 ## Estudio
 
 - [x] `/estudio` carga sin errores.
 - [x] Perfil del estudio carga desde Firestore cuando esta disponible.
-- [ ] Si Firestore falla, se conserva fallback local.<!-- ahh? -->
+- [x] Si Firestore falla, se conserva fallback local.
 - [x] Hero/imagen institucional carga.
 - [x] Texto de historia, mision, vision o contenido equivalente aparece.
 - [x] Equipo activo se muestra.
@@ -107,8 +107,8 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 - [x] Blog antiguo/mock abre por `/blog/[slug]`.
 - [x] Blog creado desde admin abre por `/blog/[slug]` sin 404.
 - [x] Blog publicado se muestra.
-- [ ] Blog `draft` u `hidden` no se muestra como publico.
-- [x] Slug inexistente devuelve 404 o estado no encontrado segun corresponda.<!-- Replicar a proyectos  -->
+- [x] Blog `draft` u `hidden` no se muestra como publico.
+- [x] Slug inexistente devuelve 404 o estado no encontrado segun corresponda.
 - [x] Encabezado inicia con titulo, subtitulo y fecha.
 - [x] No se muestran categorias arriba del titulo.
 - [x] Imagen principal carga si existe.
@@ -148,7 +148,7 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 - [x] `/admin/projects` lista proyectos.
 - [x] Crear proyecto guarda titulo, slug automatico, resumen, descripcion y metadata.
 - [x] Editar proyecto conserva/actualiza datos correctamente.
-- [ ] Slug se genera correctamente al crear.<!-- Ojjo al actualisar nombre del proyecto no se actualiza el slug -->
+- [ ] Slug se genera correctamente al crear.
 - [x] Activar/desactivar proyecto funciona.
 - [x] Proyecto activo aparece en publico.
 - [x] Proyecto inactivo no aparece en publico.
@@ -172,22 +172,21 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 
 ## Admin - categorias
 
-- [ ] `/admin/categories` lista categorias.
-- [ ] Crear categoria genera slug y orden inicial.
+- [x] `/admin/categories` lista categorias.
+- [x] Crear categoria genera slug y orden inicial.
 - [ ] Editar categoria guarda nombre, descripcion, estado e imagen.
-- [ ] Subir/reemplazar imagen de categoria funciona.
-- [ ] Activar/desactivar categoria funciona.
-- [ ] Reordenar categorias guarda `sortOrder`.
-- [ ] Eliminar categoria abre modal profesional.
-- [ ] Si la categoria tiene proyectos asociados, la accion cambia a ocultar.
-- [ ] Si la categoria tiene blogs asociados, la accion cambia a ocultar.
-- [ ] Al ocultar categoria con relaciones, se guarda `isActive: false`.
-- [ ] Al ocultar categoria con relaciones, no se eliminan proyectos/blogs.
-- [ ] Si la categoria no tiene relaciones, se elimina fisicamente.
-- [ ] Al eliminar fisicamente categoria, se borra su imagen de Storage si `coverMedia.storagePath` existe.
-- [ ] Si la imagen de categoria es externa o no tiene `storagePath`, no intenta borrar Storage.
-- [ ] Tras eliminar categoria, desaparece del listado.
-
+- [x] Subir/reemplazar imagen de categoria funciona.
+- [x] Activar/desactivar categoria funciona.
+- [x] Reordenar categorias guarda `sortOrder`.
+- [x] Eliminar categoria abre modal profesional.
+- [x] Si la categoria tiene proyectos asociados, la accion cambia a ocultar.
+- [x] Si la categoria tiene blogs asociados, la accion cambia a ocultar.
+- [x] Al ocultar categoria con relaciones, se guarda `isActive: false`.
+- [x] Al ocultar categoria con relaciones, no se eliminan proyectos/blogs.
+- [x] Si la categoria no tiene relaciones, se elimina fisicamente.
+- [x] Al eliminar fisicamente categoria, se borra su imagen de Storage si `coverMedia.storagePath` existe.
+- [x] Si la imagen de categoria es externa o no tiene `storagePath`, no intenta borrar Storage.
+- [x] Tras eliminar categoria, desaparece del listado.
 ## Admin - blogs
 
 - [ ] `/admin/blogs` lista blogs `draft`, `published` y `hidden`.
@@ -288,3 +287,69 @@ Checklist manual para validar la web publica, el panel admin, Firebase, fallback
 - [ ] Cubrir rutas dinamicas creadas desde admin sin rebuild.
 - [ ] Cubrir flujos de eliminacion fisica vs ocultamiento.
 - [ ] Cubrir smoke visual responsive con navegador real.
+
+## Validaciones de formularios - campos obligatorios
+
+Checklist para validar que los formularios del panel admin bloqueen correctamente registros incompletos cuando van a mostrarse públicamente.
+
+### Proyectos
+
+- [x] No permitir guardar proyecto sin título.
+- [x] No permitir guardar proyecto sin resumen.
+- [x] No permitir activar proyecto sin descripción.
+- [x] No permitir activar proyecto sin portada.
+- [x] No permitir activar proyecto sin al menos una categoría.
+- [x] No permitir activar proyecto si la especialización principal no pertenece a las categorías seleccionadas.
+- [x] Si se eliminan todas las categorías, limpiar la especialización principal.
+- [x] Si no hay especialización principal pero sí hay categorías, asignar o solicitar una categoría principal.
+- [x] Confirmar que el slug se genera al crear y no es editable.
+- [x] Confirmar que el ID no es editable.
+- [x] Confirmar que ubicación, año, área y etapa sean recomendados, pero no bloqueantes.
+
+### Categorías
+
+- [x] No permitir guardar categoría sin nombre.
+- [x] Confirmar que el slug se genera al crear y no es editable.
+- [x] Confirmar que el ID no es editable.
+- [x] Si la categoría está activa y aparece en Home/Áreas de especialización, exigir imagen principal.
+- [x] Confirmar que la descripción sea recomendada, pero no bloqueante.
+- [x] Revisar si `categoryGroup` debe mantenerse como valor interno no bloqueante.
+
+### Blogs
+
+- [x] No permitir guardar blog sin título.
+- [x] No permitir guardar blog sin estado.
+- [x] No permitir publicar blog sin contenido.
+- [x] No permitir publicar blog sin imagen principal.
+- [x] No permitir publicar blog sin al menos una categoría.
+- [x] Si se cambia el estado a publicado y no existe fecha de publicación, asignar fecha actual.
+- [x] Confirmar que blogs en `draft` o `hidden` puedan guardarse incompletos.
+- [x] Confirmar que el slug se genera al crear y no es editable.
+- [x] Confirmar que el ID no es editable.
+
+### Estudio
+
+- [ ] No permitir guardar perfil de estudio sin nombre.
+- [ ] Confirmar que descripción general y email sean recomendados fuertes, pero no bloqueantes.
+- [ ] Confirmar que teléfono, WhatsApp number, Instagram URL y dirección sean recomendados, pero no bloqueantes.
+- [ ] Si existe WhatsApp number y no existe WhatsApp URL, generar automáticamente el enlace de WhatsApp.
+- [ ] Confirmar que ciudad, país, ubicación alternativa, mapa, horarios y LinkedIn sean opcionales.
+- [ ] Confirmar que el logotipo principal no sea editable si está definido como solo lectura.
+
+### Equipo
+
+- [ ] No permitir guardar miembro sin nombre.
+- [ ] No permitir activar miembro sin foto.
+- [ ] No permitir activar miembro sin rol/cargo.
+- [ ] Confirmar que miembros inactivos puedan guardarse incompletos.
+- [ ] Confirmar que biografía, email, Instagram y LinkedIn sean opcionales.
+- [ ] Confirmar que el ID no es editable.
+
+### Regla general
+
+- [ ] Confirmar que registros inactivos, ocultos o en borrador puedan guardarse incompletos.
+- [ ] Confirmar que registros activos o publicados exijan campos mínimos.
+- [ ] Confirmar que los slugs se generen al crear y no se editen.
+- [ ] Confirmar que los IDs nunca sean editables.
+- [ ] Confirmar que las imágenes subidas guarden `storagePath`.
+- [ ] Confirmar que al eliminar media con `storagePath`, se elimine Firestore y Storage.

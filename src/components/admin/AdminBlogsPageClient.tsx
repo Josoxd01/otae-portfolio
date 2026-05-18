@@ -10,6 +10,7 @@ import type { MouseEvent } from "react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useToast } from "@/components/admin/AdminToastProvider";
+import { validateAdminBlog } from "@/lib/admin/admin-validations";
 import {
   deleteAdminBlog,
   getAdminBlogs,
@@ -66,6 +67,11 @@ export function AdminBlogsPageClient() {
 
     try {
       if (status === "published") {
+        validateAdminBlog({
+          ...blog,
+          status: "published",
+          publishedAt: blog.publishedAt || new Date().toISOString(),
+        });
         await publishAdminBlog(blog.id);
       } else {
         await hideAdminBlog(blog.id);
@@ -75,7 +81,7 @@ export function AdminBlogsPageClient() {
       toast.success(status === "published" ? "Blog publicado." : "Blog ocultado.");
     } catch (error) {
       console.warn("Could not update blog status.", error);
-      setErrorMessage("No se pudo actualizar el estado del blog.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar el estado del blog.");
       toast.error("No se pudo actualizar. Intentalo nuevamente.");
     } finally {
       setUpdatingBlogId("");
