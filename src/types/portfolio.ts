@@ -34,6 +34,8 @@ export type ContactMessageStatus = "new" | "read" | "replied" | "archived";
 
 export type ContactMessageSource = "web" | "instagram" | "whatsapp" | "referral" | "other";
 
+export type BlogStatus = "draft" | "published" | "hidden";
+
 export interface OpeningHour {
   label: string;
   value: string;
@@ -111,6 +113,20 @@ export interface ProjectMedia {
   altText?: string;
   sortOrder: number;
   isVisible: boolean;
+}
+
+export interface Blog {
+  id: string;
+  title: string;
+  slug: string;
+  subtitle?: string;
+  content: string;
+  coverMedia?: MediaReference;
+  categoryIds: string[];
+  status: BlogStatus;
+  publishedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TeamMember {

@@ -5,6 +5,7 @@ import type { ContactChannel, StudioProfile } from "@/types/portfolio";
 const footerLinks = [
   { label: "Proyectos", href: "/proyectos" },
   { label: "Estudio", href: "/estudio" },
+  { label: "Blogs", href: "/blog" },
   { label: "Contacto", href: "/contacto" },
 ];
 
@@ -19,7 +20,7 @@ export function Footer({ contactChannels, studioProfile, variant = "light" }: Fo
   const classes = {
     border: isDark ? "border-neutral-800" : "border-neutral-200",
     footer: isDark
-      ? "border-t border-neutral-800 bg-neutral-950 px-6 py-16 text-neutral-400 sm:px-8 lg:px-12"
+      ? "border-t border-neutral-700 bg-neutral-800 px-6 py-16 text-neutral-400 sm:px-8 lg:px-12"
       : "border-t border-neutral-200 bg-white px-6 py-16 text-neutral-700 sm:px-8 lg:px-12",
     heading: isDark ? "text-white" : "text-neutral-950",
     hover: isDark ? "hover:text-white" : "hover:text-neutral-950",

@@ -6,6 +6,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import type { DocumentData } from "firebase-admin/firestore";
 
 import {
+  seedBlogs,
   seedContactChannels,
   seedProjectCategories,
   seedProjectMediaByProjectId,
@@ -15,6 +16,9 @@ import {
 } from "../src/data/seed";
 
 type SerializableValue = | string | number | boolean | null | SerializableValue[] | { [key: string]: SerializableValue };
+type SeedTarget = "all" | "blogs";
+
+const seedTarget = getSeedTarget();
 
 loadEnvFile(".env");
 loadEnvFile(".env.local");
@@ -32,7 +36,13 @@ const app = getApps().length > 0 ? getApps()[0] : initializeApp({
 const db = getFirestore(app);
 
 async function seedFirestore() {
-  console.log("Starting Firestore seed...");
+  console.log(`Starting Firestore seed (${seedTarget})...`);
+
+  if (seedTarget === "blogs") {
+    await seedBlogsCollection();
+    console.log("Firestore blogs seed completed.");
+    return;
+  }
 
   await upsertDocument("studio_profile/main", seedStudioProfile);
 
@@ -57,7 +67,15 @@ async function seedFirestore() {
     await upsertDocument(`contact_channels/${channel.id}`, channel);
   }
 
+  await seedBlogsCollection();
+
   console.log("Firestore seed completed.");
+}
+
+async function seedBlogsCollection() {
+  for (const blog of seedBlogs) {
+    await upsertDocument(`blogs/${blog.id}`, blog);
+  }
 }
 
 async function upsertDocument(path: string, data: unknown) {
@@ -124,6 +142,21 @@ function loadEnvFile(fileName: string) {
       process.env[key] = value;
     }
   }
+}
+
+function getSeedTarget(): SeedTarget {
+  const onlyArg = process.argv.find((arg) => arg.startsWith("--only="));
+  const target = onlyArg?.replace("--only=", "");
+
+  if (!target) {
+    return "all";
+  }
+
+  if (target === "blogs") {
+    return target;
+  }
+
+  throw new Error(`Unsupported seed target: ${target}`);
 }
 
 seedFirestore().catch((error) => {

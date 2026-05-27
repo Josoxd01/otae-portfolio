@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
+import { validateAdminTeamMember } from "@/lib/admin/admin-validations";
 import {
   getAdminTeamMember,
   getAdminTeamMembers,
@@ -19,6 +21,7 @@ interface AdminTeamMemberFormClientProps {
 
 export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClientProps) {
   const router = useRouter();
+  const toast = useToast();
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(Boolean(memberId));
   const [isSaving, setIsSaving] = useState(false);
@@ -68,11 +71,14 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
 
     try {
       const normalizedMember = normalizeMember(member, Boolean(memberId));
+      validateAdminTeamMember(normalizedMember);
       await saveAdminTeamMember(normalizedMember);
+      toast.success(memberId ? "Miembro actualizado." : "Miembro creado.");
       router.push("/admin/team");
     } catch (error) {
       console.warn("Could not save team member.", error);
-      setErrorMessage("No se pudo guardar el miembro del equipo.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el miembro del equipo.");
+      toast.error("No se pudo guardar. Intentalo nuevamente.");
     } finally {
       setIsSaving(false);
     }
@@ -112,8 +118,10 @@ export function AdminTeamMemberFormClient({ memberId }: AdminTeamMemberFormClien
       await saveAdminTeamMember(updatedMember);
       setMember(updatedMember);
       setUploadMessage("Foto actualizada.");
+      toast.success("Foto actualizada.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo subir la foto.");
+      toast.error("No se pudo subir la foto.");
     } finally {
       setIsUploading(false);
     }
@@ -252,7 +260,7 @@ function createEmptyMember(): TeamMember {
     id: "",
     name: "",
     sortOrder: 1,
-    isActive: true,
+    isActive: false,
   };
 }
 

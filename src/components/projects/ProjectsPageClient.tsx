@@ -10,6 +10,7 @@ import type { Project, ProjectCategory, ProjectMedia } from "@/types/portfolio";
 interface ProjectsPageClientProps {
   categories: ProjectCategory[];
   initialCategoryId?: string;
+  initialCategoryQuery?: string;
   projectMediaByProjectId: Record<string, ProjectMedia[]>;
   projects: Project[];
 }
@@ -25,12 +26,19 @@ const projectsPerPage = 3;
 const heroVideoUrl = "/videos/projects-hero.mp4";
 const heroFallbackImageUrl = "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&w=2200&q=80";
 
-export function ProjectsPageClient({ categories, initialCategoryId = "all", projectMediaByProjectId, projects }: ProjectsPageClientProps) {
+export function ProjectsPageClient({
+  categories,
+  initialCategoryId = "all",
+  initialCategoryQuery,
+  projectMediaByProjectId,
+  projects,
+}: ProjectsPageClientProps) {
   const projectsPageData = useProjectsPageData({ categories, projectMediaByProjectId, projects });
   const activeCategories = projectsPageData.categories;
   const activeProjectMediaByProjectId = projectsPageData.projectMediaByProjectId;
   const activeProjects = projectsPageData.projects;
   const [categoryId, setCategoryId] = useState(initialCategoryId);
+  const [hasManualCategoryFilter, setHasManualCategoryFilter] = useState(false);
   const [year, setYear] = useState("all");
   const [location, setLocation] = useState("all");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
@@ -39,6 +47,18 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
   const projectsListRef = useRef<HTMLDivElement | null>(null);
 
   const categoryById = useMemo(() => new Map(activeCategories.map((category) => [category.id, category])), [activeCategories]);
+
+  const resolvedCategoryId = useMemo(() => {
+    if (hasManualCategoryFilter || categoryId !== "all" || !initialCategoryQuery) {
+      return categoryId;
+    }
+
+    return (
+      activeCategories.find(
+        (category) => category.id === initialCategoryQuery || category.slug === initialCategoryQuery,
+      )?.id ?? categoryId
+    );
+  }, [activeCategories, categoryId, hasManualCategoryFilter, initialCategoryQuery]);
 
   const categoryOptions = useMemo<FilterOption[]>(
     () => [
@@ -72,7 +92,7 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
     () =>
       activeProjects
         .filter((project) => {
-          const matchesCategory = categoryId === "all" || project.categoryIds.includes(categoryId);
+          const matchesCategory = resolvedCategoryId === "all" || project.categoryIds.includes(resolvedCategoryId);
           const matchesYear = year === "all" || String(project.year) === year;
           const matchesLocation = location === "all" || project.location === location;
 
@@ -85,7 +105,7 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
 
           return a.sortOrder - b.sortOrder;
         }),
-    [activeProjects, categoryId, location, year],
+    [activeProjects, location, resolvedCategoryId, year],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / projectsPerPage));
@@ -94,6 +114,7 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
   function updateFilter(filter: FilterKey, value: string) {
     if (filter === "category") {
       setCategoryId(value);
+      setHasManualCategoryFilter(true);
     }
 
     if (filter === "year") {
@@ -110,6 +131,7 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
 
   function resetFilters() {
     setCategoryId("all");
+    setHasManualCategoryFilter(true);
     setYear("all");
     setLocation("all");
     setOpenFilter(null);
@@ -169,7 +191,7 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
                 onOpenChange={() => setOpenFilter(openFilter === "category" ? null : "category")}
                 onSelect={(value) => updateFilter("category", value)}
                 options={categoryOptions}
-                value={categoryId}
+                value={resolvedCategoryId}
               />
               <CustomFilter
                 icon={<CalendarIcon />}
@@ -222,11 +244,11 @@ export function ProjectsPageClient({ categories, initialCategoryId = "all", proj
               ))}
             </div>
           ) : (
-            <div className="mt-16 border-y border-neutral-200 py-16 text-center">
+            <div className="mt-16 border-y border-neutral-200 py-16 text-center ">
               <p className="font-title text-3xl text-neutral-950">No hay proyectos con esos filtros.</p>
               <button
                 type="button"
-                className="mt-6 text-sm font-semibold text-neutral-500 transition hover:text-neutral-950"
+                className="mt-6 text-sm font-semibold text-neutral-500 transition hover:text-neutral-950 cursor-pointer"
                 onClick={resetFilters}
               >
                 Restablecer búsqueda
@@ -326,8 +348,8 @@ function CustomFilter({
               key={option.value}
               type="button"
               className={`flex w-full items-center justify-between px-3 py-3 text-left text-sm transition ${option.value === value
-                  ? "bg-neutral-950 text-white"
-                  : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950"
+                ? "bg-neutral-950 text-white"
+                : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950"
                 }`}
               onClick={() => onSelect(option.value)}
             >
@@ -407,8 +429,8 @@ function ProjectMediaComposition({ media, priority = false, project }: ProjectMe
       <Link
         href={`/proyectos/${project.slug}`}
         className={`group block overflow-hidden bg-neutral-200 ${media.secondary
-            ? "absolute left-0 top-0 h-[78%] w-[82%]"
-            : "relative h-[420px] w-full sm:h-[560px]"
+          ? "absolute left-0 top-0 h-[78%] w-[82%]"
+          : "relative h-[420px] w-full sm:h-[560px]"
           }`}
       >
         <ProjectImage

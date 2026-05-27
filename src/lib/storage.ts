@@ -1,4 +1,4 @@
-import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
 
 import { storage } from "@/lib/firebase";
 import {
@@ -60,8 +60,50 @@ export async function uploadTeamMemberPhoto(memberId: string, file: File) {
   return uploadFile(`team-media/${memberId}/photo/${Date.now()}-${safeFileName(file.name)}`, file);
 }
 
+export async function uploadBlogCoverMedia(blogId: string, file: File) {
+  validateProjectCoverFile(file);
+
+  return uploadFile(`blog-media/${blogId}/cover/${Date.now()}-${safeFileName(file.name)}`, file);
+}
+
 export async function deleteStorageFile(storagePath: string) {
   await deleteObject(ref(storage, storagePath));
+}
+
+export async function deleteStorageFolder(prefix: string) {
+  const normalizedPrefix = prefix.trim().replace(/^\/+|\/+$/g, "");
+
+  if (!normalizedPrefix || normalizedPrefix.length < 3) {
+    console.warn(`Skipped unsafe storage folder delete for prefix "${prefix}".`);
+    return;
+  }
+
+  await deleteStorageFolderRef(normalizedPrefix);
+}
+
+async function deleteStorageFolderRef(prefix: string) {
+  const folderRef = ref(storage, prefix);
+  const result = await listAll(folderRef);
+
+  const fileResults = await Promise.allSettled(
+    result.items.map((itemRef) => deleteObject(itemRef)),
+  );
+
+  fileResults.forEach((deleteResult, index) => {
+    if (deleteResult.status === "rejected") {
+      console.warn(`Could not delete storage file "${result.items[index].fullPath}".`, deleteResult.reason);
+    }
+  });
+
+  const folderResults = await Promise.allSettled(
+    result.prefixes.map((prefixRef) => deleteStorageFolderRef(prefixRef.fullPath)),
+  );
+
+  folderResults.forEach((deleteResult, index) => {
+    if (deleteResult.status === "rejected") {
+      console.warn(`Could not delete storage folder "${result.prefixes[index].fullPath}".`, deleteResult.reason);
+    }
+  });
 }
 
 async function uploadProjectFile(

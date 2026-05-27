@@ -10,7 +10,7 @@ import {
   type ProjectDetailPageData,
   useProjectDetailData,
 } from "@/hooks/useProjectDetailData";
-import type { ProjectMedia, ProjectMediaRole } from "@/types/portfolio";
+import type { ProjectMedia, ProjectMediaRole, ProjectStage } from "@/types/portfolio";
 
 import type { ReactNode } from "react";
 
@@ -29,8 +29,57 @@ const mediaRoleSections: Array<{ role: ProjectMediaRole; title: string }> = [
 ];
 
 export function ProjectDetailPageClient({ initialData, slug }: ProjectDetailPageClientProps) {
-  const { categories, contactChannels, project, projectMedia, studioProfile } =
-    useProjectDetailData(slug, initialData);
+  const { data, isLoading } = useProjectDetailData(slug, initialData);
+
+  if (isLoading) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-white px-6 py-24 text-neutral-950 sm:px-8 lg:px-12">
+          <div className="mx-auto max-w-7xl">
+            <p className="section-label">Proyecto</p>
+            <h1 className="mt-7 font-title text-4xl font-medium leading-tight">
+              Cargando proyecto
+            </h1>
+          </div>
+        </main>
+        <Footer
+          variant="dark"
+          studioProfile={initialData.studioProfile}
+          contactChannels={initialData.contactChannels}
+        />
+      </>
+    );
+  }
+
+  if (!data) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-white px-6 py-24 text-neutral-950 sm:px-8 lg:px-12">
+          <div className="mx-auto max-w-7xl">
+            <p className="section-label">Proyecto</p>
+            <h1 className="mt-7 font-title text-4xl font-medium leading-tight">
+              No encontramos este proyecto
+            </h1>
+            <Link
+              href="/proyectos"
+              className="mt-8 inline-flex items-center gap-3 text-sm font-semibold text-neutral-950 transition hover:gap-4"
+            >
+              &larr; Volver a proyectos
+            </Link>
+          </div>
+        </main>
+        <Footer
+          variant="dark"
+          studioProfile={initialData.studioProfile}
+          contactChannels={initialData.contactChannels}
+        />
+      </>
+    );
+  }
+
+  const { categories, contactChannels, project, projectMedia, studioProfile } = data;
   const primaryCategory = project.primaryCategoryId
     ? categories.find((category) => category.id === project.primaryCategoryId)
     : categories.find((category) => category.id === project.categoryIds[0]);
@@ -87,6 +136,11 @@ export function ProjectDetailPageClient({ initialData, slug }: ProjectDetailPage
                         ? `${project.areaM2.toLocaleString("es-EC")} m²`
                         : undefined
                     }
+                  />
+                  <ProjectFact
+                    icon={<StageIcon />}
+                    label="Etapa"
+                    value={getProjectStageLabel(project.projectStage)}
                   />
                 </dl>
               </aside>
@@ -224,6 +278,22 @@ function ProjectFact({ icon, label, value }: ProjectFactProps) {
   );
 }
 
+function getProjectStageLabel(stage?: ProjectStage) {
+  if (!stage) {
+    return undefined;
+  }
+
+  const labels: Record<ProjectStage, string> = {
+    conceptual: "Conceptual",
+    design: "Diseño",
+    under_construction: "En construcción",
+    built: "Completado",
+    completed: "Completado",
+  };
+
+  return labels[stage] ?? undefined;
+}
+
 function PinIcon() {
   return (
     <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -264,6 +334,20 @@ function RulerIcon() {
         strokeWidth="1.7"
       />
       <path d="m8 12 1.5 1.5M10.5 9.5 12 11M13 7l1.5 1.5" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
+function StageIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M4.5 18.5h15M6 18.5V8.75l6-3.25 6 3.25v9.75"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+      <path d="M9 18.5v-5h6v5M9 10.5h6" stroke="currentColor" strokeWidth="1.7" />
     </svg>
   );
 }

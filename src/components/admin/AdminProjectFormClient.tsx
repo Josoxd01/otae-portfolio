@@ -1,10 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, DragEvent, FormEvent, MouseEvent } from "react";
 
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useToast } from "@/components/admin/AdminToastProvider";
+import {
+  normalizeProjectCategories,
+  validateAdminProject,
+} from "@/lib/admin/admin-validations";
 import {
   createAdminProjectMedia,
   deleteAdminProjectMedia,
@@ -17,7 +23,8 @@ import {
   updateAdminProjectMediaSortOrders,
 } from "@/lib/admin/portfolio-admin";
 import { slugify } from "@/lib/portfolio-helpers";
-import { deleteStorageFile, uploadProjectCoverMedia, uploadProjectMedia } from "@/lib/storage";
+import { uploadProjectCoverMedia, uploadProjectMedia } from "@/lib/storage";
+import { useDropdownDismiss } from "@/hooks/useDropdownDismiss";
 import type {
   Project,
   ProjectCategory,
@@ -30,7 +37,6 @@ const projectStageOptions: Array<{ label: string; value: ProjectStage }> = [
   { label: "Conceptual", value: "conceptual" },
   { label: "Diseño", value: "design" },
   { label: "En construcción", value: "under_construction" },
-  { label: "Construido", value: "built" },
   { label: "Completado", value: "completed" },
 ];
 
@@ -54,11 +60,18 @@ interface MediaFormState {
   title: string;
 }
 
+interface PendingMediaDelete {
+  media: ProjectMedia;
+  role: EditableMediaRole;
+}
+
 export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProps) {
   const router = useRouter();
+  const toast = useToast();
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [coverUploadMessage, setCoverUploadMessage] = useState("");
   const [deletingMediaId, setDeletingMediaId] = useState("");
+  const [deleteMediaTarget, setDeleteMediaTarget] = useState<PendingMediaDelete | null>(null);
   const [draggedMediaId, setDraggedMediaId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [form, setForm] = useState<Project>(() => createEmptyProject());
@@ -87,6 +100,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
   const currentProjectId = form.id || projectId;
   const galleryMedia = sortMediaByOrder(projectMedia.filter((media) => media.role === "gallery"));
   const planMedia = sortMediaByOrder(projectMedia.filter((media) => media.role === "plan"));
+  const closeCategorySelect = useCallback(() => setIsCategorySelectOpen(false), []);
 
   useEffect(() => {
     let isMounted = true;
@@ -145,11 +159,14 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
 
     try {
       const normalizedProject = normalizeProject(form, Boolean(projectId));
+      validateAdminProject(normalizedProject);
       await saveAdminProject(normalizedProject);
+      toast.success(projectId ? "Proyecto actualizado." : "Proyecto creado.");
       router.push("/admin/projects");
     } catch (error) {
       console.warn("Could not save project.", error);
-      setErrorMessage("No se pudo guardar el proyecto.");
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el proyecto.");
+      toast.error("No se pudo guardar. Intentalo nuevamente.");
     } finally {
       setIsSaving(false);
     }
@@ -186,8 +203,10 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
       await saveAdminProject(updatedProject);
       setForm(updatedProject);
       setCoverUploadMessage("Imagen protagonista actualizada.");
+      toast.success("Portada actualizada.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo subir la portada.");
+      toast.error("No se pudo subir la portada.");
     } finally {
       setIsUploadingCover(false);
     }
@@ -220,8 +239,10 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
       });
       updateMediaForm(role, createEmptyMediaForm());
       await reloadProjectMedia(currentProjectId);
+      toast.success(role === "gallery" ? "Imagen subida." : "Archivo subido.");
     } catch (error) {
       setMediaErrorMessage(error instanceof Error ? error.message : "No se pudo subir la media.");
+      toast.error("No se pudo subir el archivo.");
     } finally {
       setUploadingRole(null);
     }
@@ -232,8 +253,15 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
       return;
     }
 
-    await setAdminProjectMediaVisible(currentProjectId, media.id, !media.isVisible);
-    await reloadProjectMedia(currentProjectId);
+    try {
+      await setAdminProjectMediaVisible(currentProjectId, media.id, !media.isVisible);
+      await reloadProjectMedia(currentProjectId);
+      toast.success(media.isVisible ? "Media ocultada." : "Media visible.");
+    } catch (error) {
+      console.warn("Could not update media visibility.", error);
+      setMediaErrorMessage("No se pudo actualizar la media.");
+      toast.error("No se pudo actualizar. Intentalo nuevamente.");
+    }
   }
 
   async function handleMediaDrop(role: EditableMediaRole, targetMediaId: string) {
@@ -293,27 +321,17 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
     }
   }
 
-  async function handleDeleteMedia(media: ProjectMedia, role: EditableMediaRole) {
-    if (!currentProjectId || deletingMediaId) {
+  async function handleDeleteMedia() {
+    if (!currentProjectId || !deleteMediaTarget || deletingMediaId) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "¿Seguro que quieres eliminar este archivo? Esta acción no se puede deshacer.",
-    );
-
-    if (!confirmed) {
-      return;
-    }
+    const { media, role } = deleteMediaTarget;
 
     setDeletingMediaId(media.id);
     setMediaErrorMessage("");
 
     try {
-      if (media.storagePath) {
-        await deleteStorageFile(media.storagePath);
-      }
-
       await deleteAdminProjectMedia(currentProjectId, media.id);
 
       const remainingRoleMedia = sortMediaByOrder(
@@ -335,11 +353,14 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
           sortOrder: item.sortOrder,
         })),
       );
+      setDeleteMediaTarget(null);
+      toast.success("Media eliminada.");
     } catch (error) {
       console.warn("Could not delete project media.", error);
       setMediaErrorMessage(
         error instanceof Error ? error.message : "No se pudo eliminar el archivo.",
       );
+      toast.error("No se pudo eliminar. Intentalo nuevamente.");
     } finally {
       setDeletingMediaId("");
     }
@@ -391,6 +412,17 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
 
   return (
     <AdminShell>
+      <ConfirmDialog
+        open={Boolean(deleteMediaTarget)}
+        title="Eliminar archivo"
+        description="Esta accion quitara el archivo del proyecto. El archivo original en Storage no se eliminara en esta operacion."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        isLoading={Boolean(deletingMediaId)}
+        variant="danger"
+        onCancel={() => setDeleteMediaTarget(null)}
+        onConfirm={handleDeleteMedia}
+      />
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -466,6 +498,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                   <MultiCategorySelect
                     categories={activeCategories}
                     isOpen={isCategorySelectOpen}
+                    onClose={closeCategorySelect}
                     onOpenChange={() => setIsCategorySelectOpen((current) => !current)}
                     onToggle={toggleCategory}
                     selectedIds={form.categoryIds}
@@ -543,7 +576,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                   isSavingOrder={isSavingMediaOrder === "gallery"}
                   isUploading={uploadingRole === "gallery"}
                   media={galleryMedia}
-                  onDeleteMedia={(media) => handleDeleteMedia(media, "gallery")}
+                  onDeleteMedia={(media) => setDeleteMediaTarget({ media, role: "gallery" })}
                   onFileChange={(event) => handleMediaUpload(event, "gallery")}
                   onFormChange={(patch) => patchMediaForm("gallery", patch)}
                   onMediaActionClick={handleMediaActionClick}
@@ -564,7 +597,7 @@ export function AdminProjectFormClient({ projectId }: AdminProjectFormClientProp
                   isSavingOrder={isSavingMediaOrder === "plan"}
                   isUploading={uploadingRole === "plan"}
                   media={planMedia}
-                  onDeleteMedia={(media) => handleDeleteMedia(media, "plan")}
+                  onDeleteMedia={(media) => setDeleteMediaTarget({ media, role: "plan" })}
                   onFileChange={(event) => handleMediaUpload(event, "plan")}
                   onFormChange={(patch) => patchMediaForm("plan", patch)}
                   onMediaActionClick={handleMediaActionClick}
@@ -599,7 +632,7 @@ function createEmptyProject(): Project {
     description: "",
     categoryIds: [],
     isFeatured: false,
-    isActive: true,
+    isActive: false,
     sortOrder: 1,
     projectStage: "design",
   };
@@ -649,14 +682,14 @@ function moveMedia(mediaItems: ProjectMedia[], fromIndex: number, toIndex: numbe
 
 function normalizeProject(project: Project, keepExistingSlug: boolean): Project {
   const slug = keepExistingSlug && project.slug ? project.slug : slugify(project.title);
+  const normalizedCategories = normalizeProjectCategories(project);
 
   return {
-    ...project,
+    ...normalizedCategories,
     id: project.id || slug,
     slug,
     subtitle: project.subtitle || undefined,
     location: project.location || undefined,
-    primaryCategoryId: project.primaryCategoryId || project.categoryIds[0],
     coverMedia: project.coverMedia?.url
       ? {
         assetType: "image",
@@ -693,6 +726,7 @@ function SectionHeading({
 function MultiCategorySelect({
   categories,
   isOpen,
+  onClose,
   onOpenChange,
   onToggle,
   selectedIds,
@@ -700,13 +734,16 @@ function MultiCategorySelect({
 }: {
   categories: ProjectCategory[];
   isOpen: boolean;
+  onClose: () => void;
   onOpenChange: () => void;
   onToggle: (categoryId: string) => void;
   selectedIds: string[];
   selectedLabel: string;
 }) {
+  const dropdownRef = useDropdownDismiss<HTMLDivElement>(isOpen, onClose);
+
   return (
-    <div className="relative">
+    <div ref={dropdownRef} className="relative">
       <FieldLabel>Categorías</FieldLabel>
       <button
         type="button"
@@ -727,7 +764,10 @@ function MultiCategorySelect({
                 className="accent-neutral-950"
                 type="checkbox"
                 checked={selectedIds.includes(category.id)}
-                onChange={() => onToggle(category.id)}
+                onChange={() => {
+                  onToggle(category.id);
+                  onClose();
+                }}
               />
               {category.name}
             </label>
@@ -970,10 +1010,12 @@ function SelectField<T extends string>({
   value: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const closeSelect = useCallback(() => setIsOpen(false), []);
+  const selectRef = useDropdownDismiss<HTMLDivElement>(isOpen, closeSelect);
   const selectedOption = options.find((option) => option.value === value);
 
   return (
-    <div className="relative">
+    <div ref={selectRef} className="relative">
       <FieldLabel>{label}</FieldLabel>
       <button
         type="button"
@@ -996,7 +1038,7 @@ function SelectField<T extends string>({
             }`}
             onClick={() => {
               onChange("");
-              setIsOpen(false);
+              closeSelect();
             }}
           >
             Seleccionar
@@ -1013,7 +1055,7 @@ function SelectField<T extends string>({
               }`}
               onClick={() => {
                 onChange(option.value);
-                setIsOpen(false);
+                closeSelect();
               }}
             >
               {option.label}

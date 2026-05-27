@@ -2,6 +2,7 @@
 
 import { FirebaseError } from "firebase/app";
 import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -15,6 +16,7 @@ export function AdminLoginPageClient() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (user) => {
@@ -78,15 +80,30 @@ export function AdminLoginPageClient() {
             <span className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-400">
               Contraseña
             </span>
-            <input
-              autoComplete="current-password"
-              className="mt-3 w-full border border-neutral-300 bg-white px-4 py-4 text-sm text-neutral-950 transition focus:border-neutral-950 focus:outline-none"
-              name="password"
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
+            <span className="relative mt-3 block">
+              <input
+                autoComplete="current-password"
+                className="w-full border border-neutral-300 bg-white px-4 py-4 pr-24 text-sm text-neutral-950 transition focus:border-neutral-950 focus:outline-none"
+                name="password"
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                type={showPassword ? "text" : "password"}
+                value={password}
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Ocultar contrasena" : "Ver contrasena"}
+                title={showPassword ? "Ocultar contrasena" : "Ver contrasena"}
+                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center border border-neutral-300 text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950 focus:border-neutral-950 focus:outline-none"
+                onClick={() => setShowPassword((current) => !current)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" strokeWidth={1.8} />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" strokeWidth={1.8} />
+                )}
+              </button>
+            </span>
           </label>
 
           {errorMessage ? (

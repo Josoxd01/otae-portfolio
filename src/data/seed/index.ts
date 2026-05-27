@@ -1,3 +1,4 @@
+export * from "./blogs";
 export * from "./contactChannels";
 export * from "./projectCategories";
 export * from "./projects";

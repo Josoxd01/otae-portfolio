@@ -19,12 +19,21 @@ export interface ProjectDetailPageData {
 }
 
 export function useProjectDetailData(slug: string, initialData: ProjectDetailPageData) {
-  const [projectDetailData, setProjectDetailData] = useState(initialData);
+  const isInitialPlaceholder = initialData.project.id === `pending-${slug}`;
+  const [projectDetailData, setProjectDetailData] = useState<ProjectDetailPageData | null>(
+    initialData,
+  );
+  const [isLoading, setIsLoading] = useState(isInitialPlaceholder);
 
   useEffect(() => {
     let isMounted = true;
+    const isPlaceholder = initialData.project.id === `pending-${slug}`;
 
     async function loadProjectDetailData() {
+      if (isPlaceholder) {
+        setIsLoading(true);
+      }
+
       try {
         const {
           getProjectBySlugFromFirestore,
@@ -34,6 +43,9 @@ export function useProjectDetailData(slug: string, initialData: ProjectDetailPag
         const firestoreProject = await getProjectBySlugFromFirestore(slug);
 
         if (!firestoreProject) {
+          if (isMounted && isPlaceholder) {
+            setProjectDetailData(null);
+          }
           return;
         }
 
@@ -44,7 +56,7 @@ export function useProjectDetailData(slug: string, initialData: ProjectDetailPag
 
         if (isMounted) {
           setProjectDetailData((currentData) => ({
-            ...currentData,
+            ...(currentData ?? initialData),
             categories,
             project: firestoreProject,
             projectMedia,
@@ -52,6 +64,10 @@ export function useProjectDetailData(slug: string, initialData: ProjectDetailPag
         }
       } catch (error) {
         console.warn("Firestore Project detail data failed. Using local mock fallback.", error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -60,7 +76,7 @@ export function useProjectDetailData(slug: string, initialData: ProjectDetailPag
     return () => {
       isMounted = false;
     };
-  }, [slug]);
+  }, [initialData, initialData.project.id, slug]);
 
-  return projectDetailData;
+  return { data: projectDetailData, isLoading };
 }
